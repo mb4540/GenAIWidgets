@@ -1,36 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Users, Building2, UserPlus, Plus, Trash2, Edit2, Shield, ShieldOff } from 'lucide-react';
+import { Users, Building2, UserPlus, MessageSquare } from 'lucide-react';
+import {
+  TenantsTab,
+  UsersTab,
+  MembershipsTab,
+  PromptsTab,
+  PromptEditModal,
+  type Tenant,
+  type User,
+  type Membership,
+  type Prompt,
+  type PromptFormData,
+} from './components';
 
-interface Tenant {
-  id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  phone: string | null;
-  isAdmin: boolean;
-  createdAt: string;
-}
-
-interface Membership {
-  id: string;
-  tenantId: string;
-  tenantName: string;
-  userId: string;
-  userEmail: string;
-  userName: string;
-  role: 'owner' | 'member';
-  createdAt: string;
-}
-
-type TabType = 'tenants' | 'users' | 'memberships';
+type TabType = 'tenants' | 'users' | 'memberships' | 'prompts';
 
 export default function AdminPage(): React.ReactElement {
   const { user } = useAuth();
@@ -38,22 +23,22 @@ export default function AdminPage(): React.ReactElement {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [showCreateTenant, setShowCreateTenant] = useState(false);
-  const [newTenantName, setNewTenantName] = useState('');
-
-  const [showCreateUser, setShowCreateUser] = useState(false);
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState('');
-  const [newUserFullName, setNewUserFullName] = useState('');
-  const [newUserIsAdmin, setNewUserIsAdmin] = useState(false);
-
-  const [showCreateMembership, setShowCreateMembership] = useState(false);
-  const [newMembershipTenantId, setNewMembershipTenantId] = useState('');
-  const [newMembershipUserId, setNewMembershipUserId] = useState('');
-  const [newMembershipRole, setNewMembershipRole] = useState<'owner' | 'member'>('member');
+  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [promptForm, setPromptForm] = useState<PromptFormData>({
+    displayName: '',
+    description: '',
+    modelProvider: 'google',
+    modelName: '',
+    systemPrompt: '',
+    userPromptTemplate: '',
+    temperature: 0.7,
+    maxTokens: 4096,
+    isActive: true,
+  });
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -99,27 +84,36 @@ export default function AdminPage(): React.ReactElement {
     }
   }, [getAuthHeaders]);
 
+  const fetchPrompts = useCallback(async (): Promise<void> => {
+    try {
+      const response = await fetch('/api/admin/prompts', { headers: getAuthHeaders() });
+      const data = await response.json() as { success: boolean; prompts?: Prompt[]; error?: string };
+      if (data.success && data.prompts) {
+        setPrompts(data.prompts);
+      }
+    } catch {
+      setError('Failed to fetch prompts');
+    }
+  }, [getAuthHeaders]);
+
   useEffect(() => {
     const loadData = async (): Promise<void> => {
       setLoading(true);
-      await Promise.all([fetchTenants(), fetchUsers(), fetchMemberships()]);
+      await Promise.all([fetchTenants(), fetchUsers(), fetchMemberships(), fetchPrompts()]);
       setLoading(false);
     };
     void loadData();
-  }, [fetchTenants, fetchUsers, fetchMemberships]);
+  }, [fetchTenants, fetchUsers, fetchMemberships, fetchPrompts]);
 
-  const handleCreateTenant = async (): Promise<void> => {
-    if (!newTenantName.trim()) return;
+  const handleCreateTenant = async (name: string): Promise<void> => {
     try {
       const response = await fetch('/api/admin/tenants', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ name: newTenantName }),
+        body: JSON.stringify({ name }),
       });
       const data = await response.json() as { success: boolean; error?: string };
       if (data.success) {
-        setNewTenantName('');
-        setShowCreateTenant(false);
         void fetchTenants();
       } else {
         setError(data.error || 'Failed to create tenant');
@@ -148,26 +142,15 @@ export default function AdminPage(): React.ReactElement {
     }
   };
 
-  const handleCreateUser = async (): Promise<void> => {
-    if (!newUserEmail.trim() || !newUserPassword || !newUserFullName.trim()) return;
+  const handleCreateUser = async (userData: { email: string; password: string; fullName: string; isAdmin: boolean }): Promise<void> => {
     try {
       const response = await fetch('/api/admin/users', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          email: newUserEmail,
-          password: newUserPassword,
-          fullName: newUserFullName,
-          isAdmin: newUserIsAdmin,
-        }),
+        body: JSON.stringify(userData),
       });
       const data = await response.json() as { success: boolean; error?: string };
       if (data.success) {
-        setNewUserEmail('');
-        setNewUserPassword('');
-        setNewUserFullName('');
-        setNewUserIsAdmin(false);
-        setShowCreateUser(false);
         void fetchUsers();
       } else {
         setError(data.error || 'Failed to create user');
@@ -214,24 +197,15 @@ export default function AdminPage(): React.ReactElement {
     }
   };
 
-  const handleCreateMembership = async (): Promise<void> => {
-    if (!newMembershipTenantId || !newMembershipUserId) return;
+  const handleCreateMembership = async (membershipData: { tenantId: string; userId: string; role: 'owner' | 'member' }): Promise<void> => {
     try {
       const response = await fetch('/api/admin/memberships', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          tenantId: newMembershipTenantId,
-          userId: newMembershipUserId,
-          role: newMembershipRole,
-        }),
+        body: JSON.stringify(membershipData),
       });
       const data = await response.json() as { success: boolean; error?: string };
       if (data.success) {
-        setNewMembershipTenantId('');
-        setNewMembershipUserId('');
-        setNewMembershipRole('member');
-        setShowCreateMembership(false);
         void fetchMemberships();
       } else {
         setError(data.error || 'Failed to create membership');
@@ -259,6 +233,65 @@ export default function AdminPage(): React.ReactElement {
     }
   };
 
+  const handleEditPrompt = (prompt: Prompt): void => {
+    setEditingPrompt(prompt);
+    setPromptForm({
+      displayName: prompt.displayName,
+      description: prompt.description || '',
+      modelProvider: prompt.modelProvider,
+      modelName: prompt.modelName,
+      systemPrompt: prompt.systemPrompt || '',
+      userPromptTemplate: prompt.userPromptTemplate,
+      temperature: prompt.temperature,
+      maxTokens: prompt.maxTokens,
+      isActive: prompt.isActive,
+    });
+  };
+
+  const handleSavePrompt = async (): Promise<void> => {
+    if (!editingPrompt) return;
+    try {
+      const response = await fetch('/api/admin/prompts', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          functionName: editingPrompt.functionName,
+          ...promptForm,
+        }),
+      });
+      const data = await response.json() as { success: boolean; error?: string };
+      if (data.success) {
+        setEditingPrompt(null);
+        void fetchPrompts();
+      } else {
+        setError(data.error || 'Failed to update prompt');
+      }
+    } catch {
+      setError('Failed to update prompt');
+    }
+  };
+
+  const handleTogglePromptActive = async (prompt: Prompt): Promise<void> => {
+    try {
+      const response = await fetch('/api/admin/prompts', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          functionName: prompt.functionName,
+          isActive: !prompt.isActive,
+        }),
+      });
+      const data = await response.json() as { success: boolean; error?: string };
+      if (data.success) {
+        void fetchPrompts();
+      } else {
+        setError(data.error || 'Failed to toggle prompt');
+      }
+    } catch {
+      setError('Failed to toggle prompt');
+    }
+  };
+
   if (!user?.isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -267,6 +300,7 @@ export default function AdminPage(): React.ReactElement {
     { id: 'tenants' as const, label: 'Tenants', icon: Building2, count: tenants.length },
     { id: 'users' as const, label: 'Users', icon: Users, count: users.length },
     { id: 'memberships' as const, label: 'Memberships', icon: UserPlus, count: memberships.length },
+    { id: 'prompts' as const, label: 'Prompts', icon: MessageSquare, count: prompts.length },
   ];
 
   return (
@@ -283,7 +317,6 @@ export default function AdminPage(): React.ReactElement {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="border-b border-border">
         <nav className="flex gap-4">
           {tabs.map((tab) => (
@@ -308,253 +341,52 @@ export default function AdminPage(): React.ReactElement {
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
       ) : (
         <>
-          {/* Tenants Tab */}
           {activeTab === 'tenants' && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Organizations</h2>
-                <button
-                  onClick={() => setShowCreateTenant(true)}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" /> Add Tenant
-                </button>
-              </div>
-
-              {showCreateTenant && (
-                <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-                  <input
-                    type="text"
-                    value={newTenantName}
-                    onChange={(e) => setNewTenantName(e.target.value)}
-                    placeholder="Tenant name"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => void handleCreateTenant()}
-                      className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm"
-                    >
-                      Create
-                    </button>
-                    <button
-                      onClick={() => { setShowCreateTenant(false); setNewTenantName(''); }}
-                      className="text-muted-foreground px-4 py-2 text-sm"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-card border border-border rounded-lg divide-y divide-border">
-                {tenants.map((tenant) => (
-                  <div key={tenant.id} className="flex items-center justify-between p-4">
-                    <div>
-                      <div className="font-medium">{tenant.name}</div>
-                      <div className="text-sm text-muted-foreground">Slug: {tenant.slug}</div>
-                    </div>
-                    <button
-                      onClick={() => void handleDeleteTenant(tenant.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-                {tenants.length === 0 && (
-                  <div className="p-8 text-center text-muted-foreground">No tenants yet</div>
-                )}
-              </div>
-            </div>
+            <TenantsTab
+              tenants={tenants}
+              onCreateTenant={handleCreateTenant}
+              onDeleteTenant={handleDeleteTenant}
+            />
           )}
 
-          {/* Users Tab */}
           {activeTab === 'users' && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Users</h2>
-                <button
-                  onClick={() => setShowCreateUser(true)}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" /> Add User
-                </button>
-              </div>
-
-              {showCreateUser && (
-                <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-                  <input
-                    type="text"
-                    value={newUserFullName}
-                    onChange={(e) => setNewUserFullName(e.target.value)}
-                    placeholder="Full name"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="email"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    placeholder="Email"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="password"
-                    value={newUserPassword}
-                    onChange={(e) => setNewUserPassword(e.target.value)}
-                    placeholder="Password (min 8 characters)"
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  />
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={newUserIsAdmin}
-                      onChange={(e) => setNewUserIsAdmin(e.target.checked)}
-                      className="rounded"
-                    />
-                    Make admin
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => void handleCreateUser()}
-                      className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm"
-                    >
-                      Create
-                    </button>
-                    <button
-                      onClick={() => { setShowCreateUser(false); setNewUserEmail(''); setNewUserPassword(''); setNewUserFullName(''); setNewUserIsAdmin(false); }}
-                      className="text-muted-foreground px-4 py-2 text-sm"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-card border border-border rounded-lg divide-y divide-border">
-                {users.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
-                        {u.fullName.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-medium flex items-center gap-2">
-                          {u.fullName}
-                          {u.isAdmin && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Admin</span>}
-                        </div>
-                        <div className="text-sm text-muted-foreground">{u.email}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => void handleToggleAdmin(u.id, u.isAdmin)}
-                        className={`p-2 ${u.isAdmin ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
-                        title={u.isAdmin ? 'Remove admin' : 'Make admin'}
-                      >
-                        {u.isAdmin ? <ShieldOff className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-                      </button>
-                      <button
-                        onClick={() => void handleDeleteUser(u.id)}
-                        className="p-2 text-muted-foreground hover:text-destructive"
-                        disabled={u.id === user?.id}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {users.length === 0 && (
-                  <div className="p-8 text-center text-muted-foreground">No users yet</div>
-                )}
-              </div>
-            </div>
+            <UsersTab
+              users={users}
+              currentUserId={user?.id || ''}
+              onCreateUser={handleCreateUser}
+              onToggleAdmin={handleToggleAdmin}
+              onDeleteUser={handleDeleteUser}
+            />
           )}
 
-          {/* Memberships Tab */}
           {activeTab === 'memberships' && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Memberships</h2>
-                <button
-                  onClick={() => setShowCreateMembership(true)}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" /> Add Membership
-                </button>
-              </div>
+            <MembershipsTab
+              memberships={memberships}
+              tenants={tenants}
+              users={users}
+              onCreateMembership={handleCreateMembership}
+              onDeleteMembership={handleDeleteMembership}
+            />
+          )}
 
-              {showCreateMembership && (
-                <div className="bg-card border border-border rounded-lg p-4 space-y-4">
-                  <select
-                    value={newMembershipTenantId}
-                    onChange={(e) => setNewMembershipTenantId(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Select tenant...</option>
-                    {tenants.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={newMembershipUserId}
-                    onChange={(e) => setNewMembershipUserId(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">Select user...</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>{u.fullName} ({u.email})</option>
-                    ))}
-                  </select>
-                  <select
-                    value={newMembershipRole}
-                    onChange={(e) => setNewMembershipRole(e.target.value as 'owner' | 'member')}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="member">Member</option>
-                    <option value="owner">Owner</option>
-                  </select>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => void handleCreateMembership()}
-                      className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm"
-                    >
-                      Create
-                    </button>
-                    <button
-                      onClick={() => { setShowCreateMembership(false); setNewMembershipTenantId(''); setNewMembershipUserId(''); setNewMembershipRole('member'); }}
-                      className="text-muted-foreground px-4 py-2 text-sm"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-card border border-border rounded-lg divide-y divide-border">
-                {memberships.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between p-4">
-                    <div>
-                      <div className="font-medium">{m.userName}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {m.tenantName} • {m.role}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => void handleDeleteMembership(m.id)}
-                      className="p-2 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-                {memberships.length === 0 && (
-                  <div className="p-8 text-center text-muted-foreground">No memberships yet</div>
-                )}
-              </div>
-            </div>
+          {activeTab === 'prompts' && (
+            <PromptsTab
+              prompts={prompts}
+              onEdit={handleEditPrompt}
+              onToggleActive={handleTogglePromptActive}
+            />
           )}
         </>
+      )}
+
+      {editingPrompt && (
+        <PromptEditModal
+          prompt={editingPrompt}
+          formData={promptForm}
+          onFormChange={setPromptForm}
+          onSave={() => void handleSavePrompt()}
+          onClose={() => setEditingPrompt(null)}
+        />
       )}
     </div>
   );

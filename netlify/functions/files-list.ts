@@ -13,6 +13,8 @@ interface FileRow {
   file_size: number | null;
   created_at: string;
   updated_at: string;
+  extraction_status: string | null;
+  chunk_count: number | null;
 }
 
 interface FolderRow {
@@ -62,11 +64,17 @@ export default async function handler(req: Request, _context: Context): Promise<
 
   try {
     const files = await sql`
-      SELECT file_id, tenant_id, user_id, blob_key, file_name, file_path, 
-             mime_type, file_size, created_at, updated_at
-      FROM files
-      WHERE tenant_id = ${targetTenantId} AND file_path = ${path}
-      ORDER BY file_name
+      SELECT 
+        f.file_id, f.tenant_id, f.user_id, f.blob_key, f.file_name, f.file_path, 
+        f.mime_type, f.file_size, f.created_at, f.updated_at,
+        bi.status AS extraction_status,
+        (SELECT ej.chunk_count FROM extraction_jobs ej 
+         WHERE ej.blob_id = bi.blob_id AND ej.status = 'completed'
+         ORDER BY ej.completed_at DESC LIMIT 1) AS chunk_count
+      FROM files f
+      LEFT JOIN blob_inventory bi ON f.blob_key = bi.blob_key
+      WHERE f.tenant_id = ${targetTenantId} AND f.file_path = ${path}
+      ORDER BY f.file_name
     ` as FileRow[];
 
     const folders = await sql`
@@ -87,6 +95,8 @@ export default async function handler(req: Request, _context: Context): Promise<
         size: f.file_size,
         createdAt: f.created_at,
         updatedAt: f.updated_at,
+        extractionStatus: f.extraction_status,
+        chunkCount: f.chunk_count,
       })),
       folders: folders.map((f) => ({
         id: f.folder_id,

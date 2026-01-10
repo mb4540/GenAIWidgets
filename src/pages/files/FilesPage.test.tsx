@@ -170,7 +170,7 @@ describe('FilesPage', () => {
       });
     });
 
-    it('should show create folder modal when button clicked', async () => {
+    it('should show create folder form when button clicked', async () => {
       renderWithRouter(<FilesPage />);
 
       await waitFor(() => {
@@ -179,11 +179,11 @@ describe('FilesPage', () => {
 
       fireEvent.click(screen.getByText('New Folder'));
 
-      expect(screen.getByText('Create New Folder')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Folder name')).toBeInTheDocument();
+      expect(screen.getByText('Create')).toBeInTheDocument();
     });
 
-    it('should close modal when cancel clicked', async () => {
+    it('should close form when cancel clicked', async () => {
       renderWithRouter(<FilesPage />);
 
       await waitFor(() => {
@@ -193,7 +193,7 @@ describe('FilesPage', () => {
       fireEvent.click(screen.getByText('New Folder'));
       fireEvent.click(screen.getByText('Cancel'));
 
-      expect(screen.queryByText('Create New Folder')).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('Folder name')).not.toBeInTheDocument();
     });
 
     it('should create folder when form submitted', async () => {
@@ -246,7 +246,7 @@ describe('FilesPage', () => {
       renderWithRouter(<FilesPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('Failed to connect to server')).toBeInTheDocument();
+        expect(screen.getByText('Failed to load files')).toBeInTheDocument();
       });
     });
   });
