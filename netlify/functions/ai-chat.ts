@@ -1,5 +1,4 @@
 import type { Context } from '@netlify/functions';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface AiChatRequest {
   message: string;
@@ -98,20 +97,40 @@ async function queryAnthropic(message: string): Promise<ProviderResult> {
 
 async function queryGemini(message: string): Promise<ProviderResult> {
   const apiKey = process.env.GEMINI_API_KEY;
+  const baseUrl = process.env.GOOGLE_GEMINI_BASE_URL;
 
   if (!apiKey) {
     return { ok: false, error: 'Gemini API key not configured' };
   }
 
+  if (!baseUrl) {
+    return { ok: false, error: 'Gemini base URL not configured' };
+  }
+
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const result = await model.generateContent(message);
-    const text = result.response.text();
+    const response = await fetch(
+      `${baseUrl}/v1beta/models/gemini-2.5-pro:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: message }] }],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      return { ok: false, error: `Gemini error: ${response.status}` };
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
     return { ok: true, text };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return { ok: false, error: `Gemini error: ${errorMessage}` };
+    return { ok: false, error: 'Failed to connect to Gemini' };
   }
 }
 
