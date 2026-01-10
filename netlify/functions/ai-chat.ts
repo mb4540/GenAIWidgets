@@ -1,4 +1,6 @@
 import type { Context } from '@netlify/functions';
+import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 interface AiChatRequest {
   message: string;
@@ -25,73 +27,37 @@ interface AiChatResponse {
 }
 
 async function queryOpenAI(message: string, model: string): Promise<ProviderResult> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-
-  if (!apiKey) {
-    return { ok: false, error: 'OpenAI API key not configured' };
-  }
-
   try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: message }],
-        max_tokens: 1024,
-      }),
+    const openai = new OpenAI();
+    const completion = await openai.chat.completions.create({
+      model,
+      messages: [{ role: 'user', content: message }],
+      max_tokens: 1024,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return { ok: false, error: `OpenAI error: ${response.status}` };
-    }
-
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content || 'No response';
+    const text = completion.choices?.[0]?.message?.content || 'No response';
     return { ok: true, text };
   } catch (error) {
-    return { ok: false, error: 'Failed to connect to OpenAI' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { ok: false, error: `OpenAI error: ${errorMessage}` };
   }
 }
 
 async function queryAnthropic(message: string, model: string): Promise<ProviderResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  const baseUrl = process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
-
-  if (!apiKey) {
-    return { ok: false, error: 'Anthropic API key not configured' };
-  }
-
   try {
-    const response = await fetch(`${baseUrl}/v1/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: message }],
-      }),
+    const anthropic = new Anthropic();
+    const response = await anthropic.messages.create({
+      model,
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: message }],
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return { ok: false, error: `Anthropic error: ${response.status}` };
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text || 'No response';
+    const textBlock = response.content.find((block) => block.type === 'text');
+    const text = textBlock && 'text' in textBlock ? textBlock.text : 'No response';
     return { ok: true, text };
   } catch (error) {
-    return { ok: false, error: 'Failed to connect to Anthropic' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { ok: false, error: `Anthropic error: ${errorMessage}` };
   }
 }
 
@@ -123,14 +89,16 @@ async function queryGemini(message: string, model: string): Promise<ProviderResu
     );
 
     if (!response.ok) {
-      return { ok: false, error: `Gemini error: ${response.status}` };
+      const errorData = await response.text();
+      return { ok: false, error: `Gemini error: ${response.status} - ${errorData}` };
     }
 
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
     return { ok: true, text };
   } catch (error) {
-    return { ok: false, error: 'Failed to connect to Gemini' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { ok: false, error: `Gemini error: ${errorMessage}` };
   }
 }
 
