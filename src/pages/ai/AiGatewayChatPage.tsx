@@ -28,11 +28,40 @@ const PROVIDER_COLORS: Record<Provider, string> = {
   gemini: 'border-blue-500',
 };
 
+const AVAILABLE_MODELS: Record<Provider, { id: string; name: string }[]> = {
+  openai: [
+    { id: 'gpt-4o', name: 'GPT-4o' },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+    { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+    { id: 'gpt-4', name: 'GPT-4' },
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+  ],
+  anthropic: [
+    { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
+    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
+    { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
+    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' },
+  ],
+  gemini: [
+    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+  ],
+};
+
+const DEFAULT_MODELS: Record<Provider, string> = {
+  openai: 'gpt-4o-mini',
+  anthropic: 'claude-3-haiku-20240307',
+  gemini: 'gemini-1.5-flash',
+};
+
 export default function AiGatewayChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedMode, setSelectedMode] = useState<'all' | Provider>('all');
+  const [selectedModels, setSelectedModels] = useState<Record<Provider, string>>(DEFAULT_MODELS);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -49,16 +78,13 @@ export default function AiGatewayChatPage() {
     setLoading(true);
 
     try {
-      const providers = {
-        openai: selectedMode === 'all' || selectedMode === 'openai',
-        anthropic: selectedMode === 'all' || selectedMode === 'anthropic',
-        gemini: selectedMode === 'all' || selectedMode === 'gemini',
-      };
-
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content, providers }),
+        body: JSON.stringify({
+          message: userMessage.content,
+          models: selectedModels,
+        }),
       });
 
       const data = await response.json();
@@ -93,25 +119,35 @@ export default function AiGatewayChatPage() {
     <div className="flex h-screen flex-col">
       {/* Header */}
       <div className="border-b border-border p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-foreground">AI Gateway Chat</h1>
-          <div className="flex items-center gap-2">
-            <label htmlFor="mode-select" className="text-sm text-muted-foreground">
-              Mode:
+        <h1 className="text-2xl font-semibold text-foreground">AI Gateway Chat</h1>
+      </div>
+
+      {/* Model Selectors */}
+      <div className="grid gap-4 border-b border-border p-4 md:grid-cols-3">
+        {(['openai', 'anthropic', 'gemini'] as Provider[]).map((provider) => (
+          <div key={provider} className={`rounded-lg border-l-4 bg-card p-3 ${PROVIDER_COLORS[provider]}`}>
+            <label
+              htmlFor={`model-${provider}`}
+              className="mb-1 block text-sm font-medium text-card-foreground"
+            >
+              {PROVIDER_LABELS[provider]}
             </label>
             <select
-              id="mode-select"
-              value={selectedMode}
-              onChange={(e) => setSelectedMode(e.target.value as 'all' | Provider)}
-              className="rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              id={`model-${provider}`}
+              value={selectedModels[provider]}
+              onChange={(e) =>
+                setSelectedModels((prev) => ({ ...prev, [provider]: e.target.value }))
+              }
+              className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="all">Ask All (OpenAI + Anthropic + Gemini)</option>
-              <option value="openai">OpenAI Only</option>
-              <option value="anthropic">Anthropic Only</option>
-              <option value="gemini">Gemini Only</option>
+              {AVAILABLE_MODELS[provider].map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name}
+                </option>
+              ))}
             </select>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* Chat Messages */}

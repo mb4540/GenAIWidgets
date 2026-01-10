@@ -2,10 +2,10 @@ import type { Context } from '@netlify/functions';
 
 interface AiChatRequest {
   message: string;
-  providers: {
-    openai: boolean;
-    anthropic: boolean;
-    gemini: boolean;
+  models: {
+    openai: string;
+    anthropic: string;
+    gemini: string;
   };
 }
 
@@ -24,7 +24,7 @@ interface AiChatResponse {
   };
 }
 
-async function queryOpenAI(message: string): Promise<ProviderResult> {
+async function queryOpenAI(message: string, model: string): Promise<ProviderResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 
@@ -40,7 +40,7 @@ async function queryOpenAI(message: string): Promise<ProviderResult> {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model,
         messages: [{ role: 'user', content: message }],
         max_tokens: 1024,
       }),
@@ -59,7 +59,7 @@ async function queryOpenAI(message: string): Promise<ProviderResult> {
   }
 }
 
-async function queryAnthropic(message: string): Promise<ProviderResult> {
+async function queryAnthropic(message: string, model: string): Promise<ProviderResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const baseUrl = process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
 
@@ -76,7 +76,7 @@ async function queryAnthropic(message: string): Promise<ProviderResult> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model,
         max_tokens: 1024,
         messages: [{ role: 'user', content: message }],
       }),
@@ -95,7 +95,7 @@ async function queryAnthropic(message: string): Promise<ProviderResult> {
   }
 }
 
-async function queryGemini(message: string): Promise<ProviderResult> {
+async function queryGemini(message: string, model: string): Promise<ProviderResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   const baseUrl = process.env.GOOGLE_GEMINI_BASE_URL;
 
@@ -109,7 +109,7 @@ async function queryGemini(message: string): Promise<ProviderResult> {
 
   try {
     const response = await fetch(
-      `${baseUrl}/v1beta/models/gemini-2.5-pro:generateContent`,
+      `${baseUrl}/v1beta/models/${model}:generateContent`,
       {
         method: 'POST',
         headers: {
@@ -155,7 +155,7 @@ export default async function handler(req: Request, _context: Context) {
 
   try {
     const body = await req.json() as AiChatRequest;
-    const { message, providers } = body;
+    const { message, models } = body;
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return new Response(JSON.stringify({ success: false, error: 'Message is required' }), {
@@ -167,25 +167,25 @@ export default async function handler(req: Request, _context: Context) {
     const results: AiChatResponse['results'] = {};
     const promises: Promise<void>[] = [];
 
-    if (providers?.openai) {
+    if (models?.openai) {
       promises.push(
-        queryOpenAI(message).then((result) => {
+        queryOpenAI(message, models.openai).then((result) => {
           results.openai = result;
         })
       );
     }
 
-    if (providers?.anthropic) {
+    if (models?.anthropic) {
       promises.push(
-        queryAnthropic(message).then((result) => {
+        queryAnthropic(message, models.anthropic).then((result) => {
           results.anthropic = result;
         })
       );
     }
 
-    if (providers?.gemini) {
+    if (models?.gemini) {
       promises.push(
-        queryGemini(message).then((result) => {
+        queryGemini(message, models.gemini).then((result) => {
           results.gemini = result;
         })
       );
