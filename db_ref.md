@@ -82,6 +82,33 @@ User-tenant relationship with roles.
 
 ---
 
+### admins
+
+System-wide administrator access (cross-tenant).
+
+| Column     | Type        | Nullable | Default           | Description                |
+|------------|-------------|----------|-------------------|----------------------------|
+| admin_id   | UUID        | NO       | gen_random_uuid() | Primary key                |
+| user_id    | UUID        | NO       | -                 | Reference to user (unique) |
+| granted_by | UUID        | YES      | NULL              | Admin who granted access   |
+| granted_at | TIMESTAMPTZ | NO       | now()             | When admin was granted     |
+
+**Constraints:**
+- PRIMARY KEY: `admin_id`
+- FOREIGN KEY: `user_id` REFERENCES `users(user_id)` ON DELETE CASCADE
+- FOREIGN KEY: `granted_by` REFERENCES `users(user_id)` ON DELETE SET NULL
+- UNIQUE: `user_id`
+
+**Indexes:**
+- `idx_admins_user_id` on `user_id`
+
+**Notes:**
+- Admins have cross-tenant access to all features
+- `granted_by` tracks who granted admin access for audit
+- First admin must be seeded manually or via migration
+
+---
+
 ## Enums
 
 ### membership_role
@@ -102,11 +129,15 @@ CREATE TYPE membership_role AS ENUM ('owner', 'member');
 ```
 users (1) ──────< memberships >────── (1) tenants
          user_id              tenant_id
+
+users (1) ──────< admins
+         user_id
 ```
 
 - A user can belong to multiple tenants (via memberships)
 - A tenant can have multiple users (via memberships)
 - Each membership has exactly one user and one tenant
+- A user can optionally be an admin (cross-tenant access)
 
 ---
 
@@ -119,6 +150,7 @@ users (1) ──────< memberships >────── (1) tenants
 | users       | 0                | [DATE]       |
 | tenants     | 0                | [DATE]       |
 | memberships | 0                | [DATE]       |
+| admins      | 0                | [DATE]       |
 
 ---
 
@@ -171,6 +203,28 @@ SELECT EXISTS (
   SELECT 1 FROM memberships 
   WHERE user_id = $1 AND tenant_id = $2
 ) AS is_member;
+```
+
+### Check if user is admin
+
+```sql
+SELECT EXISTS (
+  SELECT 1 FROM admins 
+  WHERE user_id = $1
+) AS is_admin;
+```
+
+### Get user with admin status
+
+```sql
+SELECT 
+  u.user_id,
+  u.email,
+  u.full_name,
+  CASE WHEN a.admin_id IS NOT NULL THEN true ELSE false END AS is_admin
+FROM users u
+LEFT JOIN admins a ON u.user_id = a.user_id
+WHERE u.user_id = $1;
 ```
 
 ---
