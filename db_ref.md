@@ -229,11 +229,11 @@ tenants (1) ──────< files
 
 ## Migration History
 
-| Version | File                       | Description                                    | Applied |
-|---------|----------------------------|------------------------------------------------|---------|
-| 001     | 001_initial_schema.sql     | Initial schema with users, tenants, memberships | [DATE]  |
-| 002     | 002_admins_table.sql       | Add admins table for cross-tenant access       | [DATE]  |
-| 003     | 003_files_folders_tables.sql | Add files and folders tables for blob storage | [DATE]  |
+| Version | File                       | Description                                    | Applied    |
+|---------|----------------------------|------------------------------------------------|------------|
+| 001     | 001_initial_schema.sql     | Initial schema with users, tenants, memberships | [DATE]     |
+| 002     | 002_admins_table.sql       | Add admins table for cross-tenant access       | 2026-01-10 |
+| 003     | 003_files_folders_tables.sql | Add files and folders tables for blob storage | 2026-01-10 |
 
 ---
 
