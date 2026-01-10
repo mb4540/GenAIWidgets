@@ -6,15 +6,15 @@ This project follows strict development standards. All rules in this directory a
 
 The following rule files define the standards for this project:
 
-- **[security.md](./security.md)** - Secrets handling, auth boundaries, logging prohibitions
-- **[code-quality.md](./code-quality.md)** - TypeScript strictness, naming conventions, file organization
-- **[testing.md](./testing.md)** - Unit/integration testing standards, coverage expectations
-- **[database-design.md](./database-design.md)** - Schema standards, migration rules, `/db_ref.md` requirements
-- **[neon-database.md](./neon-database.md)** - Serverless connection handling, branch strategy
-- **[api-design.md](./api-design.md)** - REST conventions, error handling, response structure
-- **[cleanup.md](./cleanup.md)** - Safe refactoring, soft deletions, backup requirements
-- **[frontend-components.md](./frontend-components.md)** - React/Tailwind/shadcn/ui component standards
-- **[ai-gateway.md](./ai-gateway.md)** - Netlify AI Gateway usage, rate limiting, security
+- **[security.md](./rules/security.md)** - Secrets handling, auth boundaries, logging prohibitions
+- **[code-quality.md](./rules/code-quality.md)** - TypeScript strictness, naming conventions, file organization
+- **[testing.md](./rules/testing.md)** - Unit/integration testing standards, coverage expectations
+- **[database-design.md](./rules/database-design.md)** - Schema standards, migration rules, `/db_ref.md` requirements
+- **[neon-database.md](./rules/neon-database.md)** - Serverless connection handling, branch strategy
+- **[api-design.md](./rules/api-design.md)** - REST conventions, error handling, response structure
+- **[cleanup.md](./rules/cleanup.md)** - Safe refactoring, soft deletions, backup requirements
+- **[frontend-components.md](./rules/frontend-components.md)** - React/Tailwind/shadcn/ui component standards
+- **[ai-gateway.md](./rules/ai-gateway.md)** - Netlify AI Gateway usage, rate limiting, security
 
 ## Key Principles
 

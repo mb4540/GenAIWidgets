@@ -217,16 +217,18 @@ Update `package.json`:
 
 ```
 project-name/
-├── .windsurf/                    # IDE rules and standards
-│   ├── security.md
-│   ├── code-quality.md
-│   ├── testing.md
-│   ├── database-design.md
-│   ├── neon-database.md
-│   ├── api-design.md
-│   ├── cleanup.md
-│   ├── frontend-components.md
-│   └── ai-gateway.md
+├── .windsurf/                    # Windsurf workspace rules
+│   ├── rules.md                  # Main rules index (references all rule files)
+│   └── rules/                    # Individual rule files with frontmatter
+│       ├── security.md           # trigger: always_on
+│       ├── code-quality.md       # trigger: always_on
+│       ├── testing.md            # trigger: model_decision
+│       ├── database-design.md    # trigger: model_decision
+│       ├── neon-database.md      # trigger: model_decision
+│       ├── api-design.md         # trigger: model_decision
+│       ├── cleanup.md            # trigger: model_decision
+│       ├── frontend-components.md # trigger: model_decision
+│       └── ai-gateway.md         # trigger: model_decision
 │
 ├── netlify/
 │   └── functions/                # Serverless API functions (flat structure)
@@ -1248,19 +1250,55 @@ For preview deploys with separate database:
 
 ## Rules Reference
 
-All projects using this scaffold must follow the rules defined in `/.windsurf/`:
+All projects using this scaffold must follow the rules defined in `/.windsurf/rules/`.
 
-| File                     | Purpose                                                    |
-|--------------------------|------------------------------------------------------------|
-| `security.md`            | Secrets handling, auth boundaries, logging prohibitions    |
-| `code-quality.md`        | TypeScript strictness, naming conventions, file organization |
-| `testing.md`             | Unit/integration testing standards, coverage expectations  |
-| `database-design.md`     | Schema standards, migration rules, `/db_ref.md` requirements |
-| `neon-database.md`       | Serverless connection handling, branch strategy            |
-| `api-design.md`          | REST conventions, error handling, response structure       |
-| `cleanup.md`             | Safe refactoring, soft deletions, backup requirements      |
-| `frontend-components.md` | React/Tailwind/shadcn/ui component standards               |
-| `ai-gateway.md`          | Netlify AI Gateway usage, rate limiting, security          |
+### Windsurf Rules Structure
+
+Rules are stored in `.windsurf/rules/` with YAML frontmatter that controls when they are applied:
+
+```
+.windsurf/
+├── rules.md              # Index file referencing all rules
+└── rules/
+    ├── security.md       # Always active
+    ├── code-quality.md   # Always active
+    └── [other-rules].md  # Model decision
+```
+
+### Rule File Format
+
+Each rule file must include YAML frontmatter with a `trigger` field:
+
+```markdown
+---
+trigger: always_on
+---
+# Rule Title
+
+Rule content here...
+```
+
+### Trigger Types
+
+| Trigger | Behavior |
+|---------|----------|
+| `always_on` | Rule is always active for every interaction |
+| `model_decision` | AI decides when to apply based on context |
+| `manual` | Only applied when explicitly referenced |
+
+### Rule Files
+
+| File | Trigger | Purpose |
+|------|---------|---------|
+| `security.md` | `always_on` | Secrets handling, auth boundaries, logging prohibitions |
+| `code-quality.md` | `always_on` | TypeScript strictness, naming conventions, file organization |
+| `testing.md` | `model_decision` | Unit/integration testing standards, coverage expectations |
+| `database-design.md` | `model_decision` | Schema standards, migration rules, `/db_ref.md` requirements |
+| `neon-database.md` | `model_decision` | Serverless connection handling, branch strategy |
+| `api-design.md` | `model_decision` | REST conventions, error handling, response structure |
+| `cleanup.md` | `model_decision` | Safe refactoring, soft deletions, backup requirements |
+| `frontend-components.md` | `model_decision` | React/Tailwind/shadcn/ui component standards |
+| `ai-gateway.md` | `model_decision` | Netlify AI Gateway usage, rate limiting, security |
 
 **Key rule:** Always consult `/db_ref.md` before any database work.
 
