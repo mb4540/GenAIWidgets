@@ -1,13 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, LogOut, FolderOpen } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, LogOut, FolderOpen, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/ai-gateway-chat', label: 'AI Gateway Chat', icon: MessageSquare },
   { to: '/files', label: 'File Storage', icon: FolderOpen },
+];
+
+const adminNavItems = [
+  { to: '/admin', label: 'Admin', icon: Settings },
 ];
 
 export function AppLayout() {
@@ -47,6 +51,30 @@ export function AppLayout() {
               {item.label}
             </NavLink>
           ))}
+
+          {/* Admin-only nav items */}
+          {user?.isAdmin && (
+            <>
+              <div className="my-4 border-t border-border" />
+              {adminNavItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    )
+                  }
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </NavLink>
+              ))}
+            </>
+          )}
         </nav>
 
         {/* User Section */}

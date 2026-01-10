@@ -1,16 +1,41 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+
+interface TenantOption {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
+  const [selectedTenantId, setSelectedTenantId] = useState('');
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [loadingTenants, setLoadingTenants] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchTenants = async (): Promise<void> => {
+      try {
+        const response = await fetch('/api/tenants/list');
+        const data = await response.json() as { success: boolean; tenants?: TenantOption[] };
+        if (data.success && data.tenants) {
+          setTenants(data.tenants);
+        }
+      } catch {
+        console.error('Failed to fetch tenants');
+      } finally {
+        setLoadingTenants(false);
+      }
+    };
+    void fetchTenants();
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,15 +46,21 @@ export default function SignupPage() {
       return;
     }
 
-    if (!organizationName.trim()) {
-      setError('Organization name is required');
+    if (!selectedTenantId) {
+      setError('Please select an organization');
+      return;
+    }
+
+    const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+    if (!selectedTenant) {
+      setError('Invalid organization selected');
       return;
     }
 
     setLoading(true);
 
     try {
-      const result = await signUp({ email, password, fullName, tenantName: organizationName });
+      const result = await signUp({ email, password, fullName, tenantSlug: selectedTenant.slug });
       if (result.success) {
         navigate('/dashboard');
       } else {
@@ -83,21 +114,29 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label htmlFor="organizationName" className="block text-sm font-medium text-foreground">
-                Organization name
+              <label htmlFor="organization" className="block text-sm font-medium text-foreground">
+                Organization
               </label>
-              <input
-                id="organizationName"
-                name="organizationName"
-                type="text"
+              <select
+                id="organization"
+                name="organization"
                 required
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder-muted-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                placeholder="My Company"
-              />
+                value={selectedTenantId}
+                onChange={(e) => setSelectedTenantId(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                disabled={loadingTenants}
+              >
+                <option value="">
+                  {loadingTenants ? 'Loading organizations...' : 'Select an organization'}
+                </option>
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
               <p className="mt-1 text-xs text-muted-foreground">
-                This will be your workspace for files and data
+                Select the organization you belong to
               </p>
             </div>
 

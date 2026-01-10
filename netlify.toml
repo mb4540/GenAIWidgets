@@ -63,6 +63,28 @@
   to = "/.netlify/functions/folders-delete"
   status = 200
 
+# Public API
+[[redirects]]
+  from = "/api/tenants/list"
+  to = "/.netlify/functions/tenants-list"
+  status = 200
+
+# Admin API
+[[redirects]]
+  from = "/api/admin/tenants"
+  to = "/.netlify/functions/admin-tenants"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/users"
+  to = "/.netlify/functions/admin-users"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/memberships"
+  to = "/.netlify/functions/admin-memberships"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"

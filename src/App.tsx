@@ -8,6 +8,7 @@ import SignupPage from './pages/auth/SignupPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import AiGatewayChatPage from './pages/ai/AiGatewayChatPage'
 import FilesPage from './pages/files/FilesPage'
+import AdminPage from './pages/admin/AdminPage'
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/ai-gateway-chat" element={<AiGatewayChatPage />} />
               <Route path="/files" element={<FilesPage />} />
+              <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>
         </Routes>
