@@ -6,6 +6,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
@@ -20,10 +21,15 @@ export default function SignupPage() {
       return;
     }
 
+    if (!organizationName.trim()) {
+      setError('Organization name is required');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await signUp({ email, password, fullName });
+      const result = await signUp({ email, password, fullName, tenantName: organizationName });
       if (result.success) {
         navigate('/dashboard');
       } else {
@@ -74,6 +80,25 @@ export default function SignupPage() {
                 className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder-muted-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="John Doe"
               />
+            </div>
+
+            <div>
+              <label htmlFor="organizationName" className="block text-sm font-medium text-foreground">
+                Organization name
+              </label>
+              <input
+                id="organizationName"
+                name="organizationName"
+                type="text"
+                required
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder-muted-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                placeholder="My Company"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                This will be your workspace for files and data
+              </p>
             </div>
 
             <div>
