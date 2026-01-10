@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import handler from './ai-chat';
+import handler from '../../../netlify/functions/ai-chat';
 
 function createMockRequest(method: string, body?: unknown): Request {
   return {
