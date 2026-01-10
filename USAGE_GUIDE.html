@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Scaffolding - Usage Guide</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --border: #475569;
+      --code-bg: #1e293b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-primary);
+    }
+
+    h4 {
+      font-size: 1.1rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .section {
+      background-color: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .step-container {
+      background-color: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid var(--accent);
+    }
+
+    .step-number {
+      display: inline-block;
+      background-color: var(--accent);
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 28px;
+      font-weight: bold;
+      margin-right: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .step-title {
+      display: inline;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .step-content {
+      margin-top: 1rem;
+      margin-left: 2.5rem;
+    }
+
+    code {
+      background-color: var(--code-bg);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      color: #e879f9;
+    }
+
+    pre {
+      background-color: var(--code-bg);
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      border: 1px solid var(--border);
+    }
+
+    pre code {
+      padding: 0;
+      background: none;
+      color: #a5f3fc;
+    }
+
+    .command-block {
+      background-color: #0c1222;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      position: relative;
+    }
+
+    .command-block::before {
+      content: '$ ';
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .command-block code {
+      background: none;
+      color: #fde68a;
+    }
+
+    ul, ol {
+      margin: 1rem 0;
+      padding-left: 1.5rem;
+      color: var(--text-secondary);
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      background-color: var(--bg-secondary);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    td {
+      color: var(--text-secondary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .checklist {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .checklist li {
+      padding: 0.5rem 0;
+      padding-left: 2rem;
+      position: relative;
+    }
+
+    .checklist li::before {
+      content: '☐';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-size: 1.2rem;
+    }
+
+    .warning-box {
+      background-color: rgba(245, 158, 11, 0.1);
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .warning-box::before {
+      content: '⚠️ ';
+    }
+
+    .success-box {
+      background-color: rgba(34, 197, 94, 0.1);
+      border: 1px solid var(--success);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .info-box {
+      background-color: rgba(59, 130, 246, 0.1);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .toc {
+      background-color: var(--bg-secondary);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .toc h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+
+    .toc ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .toc li {
+      margin-bottom: 0.25rem;
+    }
+
+    .toc a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .toc a:hover {
+      text-decoration: underline;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    a:hover {
+      color: var(--accent-hover);
+    }
+
+    .screenshot-placeholder {
+      background-color: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      margin: 1rem 0;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      h2 {
+        font-size: 1.5rem;
+      }
+      
+      .step-content {
+        margin-left: 0;
+        margin-top: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Project Scaffolding</h1>
+  <p class="subtitle">Complete guide for setting up new projects using the scaffolding template</p>
+
+  <nav class="toc">
+    <h3>Table of Contents</h3>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#quick-start">Quick Start</a></li>
+      <li><a href="#neon-setup">Neon Database Setup (Detailed)</a></li>
+      <li><a href="#netlify-setup">Netlify Setup (Detailed)</a></li>
+      <li><a href="#project-setup">New Project Setup</a></li>
+      <li><a href="#environment">Environment Configuration</a></li>
+      <li><a href="#verification">Verification Checklist</a></li>
+      <li><a href="#files">File Reference</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </nav>
+
+  <!-- Overview -->
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>This repository is a <strong>template</strong> containing planning documentation and development rules. It provides the blueprint and standards for building applications consistently.</p>
+    
+    <div class="section">
+      <h3>What's Included</h3>
+      <table>
+        <tr>
+          <th>File/Directory</th>
+          <th>Purpose</th>
+        </tr>
+        <tr>
+          <td><code>.windsurf/</code></td>
+          <td>9 rule files for development standards</td>
+        </tr>
+        <tr>
+          <td><code>goldScaffoldingPlan.md</code></td>
+          <td>Complete setup instructions with code</td>
+        </tr>
+        <tr>
+          <td><code>db_ref.md</code></td>
+          <td>Database schema documentation template</td>
+        </tr>
+        <tr>
+          <td><code>README.md</code></td>
+          <td>Repository overview</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>Target Stack</h3>
+      <table>
+        <tr>
+          <th>Layer</th>
+          <th>Technology</th>
+        </tr>
+        <tr><td>Frontend</td><td>React + Vite (TypeScript)</td></tr>
+        <tr><td>Styling</td><td>Tailwind CSS + shadcn/ui</td></tr>
+        <tr><td>Backend</td><td>Netlify Functions</td></tr>
+        <tr><td>Database</td><td>Neon (PostgreSQL)</td></tr>
+        <tr><td>Auth</td><td>JWT + bcryptjs</td></tr>
+        <tr><td>Hosting</td><td>Netlify</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section id="quick-start">
+    <h2>Quick Start</h2>
+    <p>For experienced users who just need the commands:</p>
+    
+    <pre><code># Create project
+npm create vite@latest my-project -- --template react-ts
+cd my-project
+
+# Copy scaffolding files
+cp -r /path/to/ProjectScaffolding/.windsurf ./
+cp /path/to/ProjectScaffolding/db_ref.md ./
+cp /path/to/ProjectScaffolding/goldScaffoldingPlan.md ./
+
+# Install dependencies
+npm install react-router-dom @netlify/functions @neondatabase/serverless
+npm install jsonwebtoken bcryptjs
+npm install -D tailwindcss postcss autoprefixer @types/jsonwebtoken @types/bcryptjs
+
+# Initialize
+npx tailwindcss init -p
+npx shadcn@latest init
+
+# Start development
+npm run dev</code></pre>
+  </section>
+
+  <!-- Neon Setup -->
+  <section id="neon-setup">
+    <h2>Neon Database Setup (Detailed)</h2>
+    <p>Step-by-step instructions for setting up your Neon PostgreSQL database.</p>
+
+    <div class="step-container">
+      <span class="step-number">1</span>
+      <span class="step-title">Create a Neon Account</span>
+      <div class="step-content">
+        <ol>
+          <li>Go to <a href="https://console.neon.tech" target="_blank">https://console.neon.tech</a></li>
+          <li>Click <strong>"Sign Up"</strong> or <strong>"Get Started"</strong></li>
+          <li>Sign up with GitHub, Google, or email</li>
+          <li>Verify your email if required</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">2</span>
+      <span class="step-title">Create a New Project</span>
+      <div class="step-content">
+        <ol>
+          <li>From the Neon dashboard, click <strong>"New Project"</strong></li>
+          <li>Enter a <strong>Project Name</strong> (e.g., "my-app-db")</li>
+          <li>Select a <strong>Region</strong> closest to your users (or Netlify's edge)</li>
+          <li>Choose <strong>PostgreSQL Version</strong> (latest recommended)</li>
+          <li>Click <strong>"Create Project"</strong></li>
+        </ol>
+        <div class="info-box">
+          The project will be created with a default <code>main</code> branch. This will be your production database.
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">3</span>
+      <span class="step-title">Get Your Connection String</span>
+      <div class="step-content">
+        <ol>
+          <li>After project creation, you'll see the <strong>Connection Details</strong> panel</li>
+          <li>Click the <strong>"Connection string"</strong> tab</li>
+          <li>Select <strong>"Pooled connection"</strong> (important for serverless!)</li>
+          <li>Copy the connection string - it looks like:
+            <pre><code>postgresql://user:password@ep-xxx-xxx-123456.us-east-2.aws.neon.tech/neondb?sslmode=require</code></pre>
+          </li>
+        </ol>
+        <div class="warning-box">
+          Always use the <strong>pooled</strong> connection string for Netlify Functions. Direct connections can exhaust connection limits.
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">4</span>
+      <span class="step-title">Create Development Branch</span>
+      <div class="step-content">
+        <ol>
+          <li>In the Neon console, go to <strong>"Branches"</strong> in the left sidebar</li>
+          <li>Click <strong>"Create Branch"</strong></li>
+          <li>Name it <code>dev</code></li>
+          <li>Select <strong>"main"</strong> as the parent branch</li>
+          <li>Click <strong>"Create Branch"</strong></li>
+          <li>Copy the connection string for the <code>dev</code> branch</li>
+        </ol>
+        <div class="info-box">
+          Use the <code>dev</code> branch connection string in your local <code>.env.local</code> file.
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">5</span>
+      <span class="step-title">Run Initial Migration</span>
+      <div class="step-content">
+        <p>Connect to your database and run the initial schema:</p>
+        <div class="command-block">
+          <code>psql "your-connection-string" -f migrations/001_initial_schema.sql</code>
+        </div>
+        <p>Or use the Neon SQL Editor:</p>
+        <ol>
+          <li>Go to <strong>"SQL Editor"</strong> in the left sidebar</li>
+          <li>Select your branch (<code>dev</code> for development)</li>
+          <li>Paste the contents of <code>migrations/001_initial_schema.sql</code></li>
+          <li>Click <strong>"Run"</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">6</span>
+      <span class="step-title">Verify Tables Created</span>
+      <div class="step-content">
+        <p>In the SQL Editor, run:</p>
+        <pre><code>SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';</code></pre>
+        <p>You should see: <code>users</code>, <code>tenants</code>, <code>memberships</code></p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Neon Branch Strategy</h3>
+      <table>
+        <tr>
+          <th>Environment</th>
+          <th>Branch</th>
+          <th>Usage</th>
+        </tr>
+        <tr>
+          <td>Local Development</td>
+          <td><code>dev</code></td>
+          <td>Your <code>.env.local</code> file</td>
+        </tr>
+        <tr>
+          <td>Preview Deploys</td>
+          <td><code>preview</code></td>
+          <td>Netlify deploy-preview context</td>
+        </tr>
+        <tr>
+          <td>Production</td>
+          <td><code>main</code></td>
+          <td>Netlify production context</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Netlify Setup -->
+  <section id="netlify-setup">
+    <h2>Netlify Setup (Detailed)</h2>
+    <p>Step-by-step instructions for deploying your project to Netlify.</p>
+
+    <div class="step-container">
+      <span class="step-number">1</span>
+      <span class="step-title">Create a Netlify Account</span>
+      <div class="step-content">
+        <ol>
+          <li>Go to <a href="https://app.netlify.com" target="_blank">https://app.netlify.com</a></li>
+          <li>Click <strong>"Sign up"</strong></li>
+          <li>Sign up with GitHub (recommended), GitLab, Bitbucket, or email</li>
+          <li>Authorize Netlify to access your repositories</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">2</span>
+      <span class="step-title">Install Netlify CLI</span>
+      <div class="step-content">
+        <div class="command-block">
+          <code>npm install -g netlify-cli</code>
+        </div>
+        <p>Verify installation:</p>
+        <div class="command-block">
+          <code>netlify --version</code>
+        </div>
+        <p>Login to Netlify:</p>
+        <div class="command-block">
+          <code>netlify login</code>
+        </div>
+        <p>This opens a browser window to authenticate.</p>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">3</span>
+      <span class="step-title">Create a New Site (Option A: From Dashboard)</span>
+      <div class="step-content">
+        <ol>
+          <li>From Netlify dashboard, click <strong>"Add new site"</strong> → <strong>"Import an existing project"</strong></li>
+          <li>Select your Git provider (GitHub, GitLab, Bitbucket)</li>
+          <li>Choose your repository</li>
+          <li>Configure build settings:
+            <table>
+              <tr><th>Setting</th><th>Value</th></tr>
+              <tr><td>Build command</td><td><code>npm run build</code></td></tr>
+              <tr><td>Publish directory</td><td><code>dist</code></td></tr>
+              <tr><td>Functions directory</td><td><code>netlify/functions</code></td></tr>
+            </table>
+          </li>
+          <li>Click <strong>"Deploy site"</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">3</span>
+      <span class="step-title">Create a New Site (Option B: From CLI)</span>
+      <div class="step-content">
+        <p>From your project directory:</p>
+        <div class="command-block">
+          <code>netlify init</code>
+        </div>
+        <ol>
+          <li>Select <strong>"Create & configure a new site"</strong></li>
+          <li>Choose your team</li>
+          <li>Enter a site name (or leave blank for random)</li>
+          <li>Authorize GitHub access if prompted</li>
+          <li>Confirm build settings (auto-detected from <code>netlify.toml</code>)</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">4</span>
+      <span class="step-title">Configure Environment Variables</span>
+      <div class="step-content">
+        <ol>
+          <li>Go to <strong>Site settings</strong> → <strong>Environment variables</strong></li>
+          <li>Click <strong>"Add a variable"</strong></li>
+          <li>Add the following variables:</li>
+        </ol>
+        <table>
+          <tr>
+            <th>Key</th>
+            <th>Value</th>
+            <th>Context</th>
+          </tr>
+          <tr>
+            <td><code>DATABASE_URL</code></td>
+            <td>Your Neon <code>main</code> branch pooled connection string</td>
+            <td>Production</td>
+          </tr>
+          <tr>
+            <td><code>DATABASE_URL</code></td>
+            <td>Your Neon <code>preview</code> branch pooled connection string</td>
+            <td>Deploy previews</td>
+          </tr>
+          <tr>
+            <td><code>JWT_SECRET</code></td>
+            <td>Generate with: <code>openssl rand -base64 32</code></td>
+            <td>All</td>
+          </tr>
+        </table>
+        <div class="warning-box">
+          Use different <code>JWT_SECRET</code> values for production vs preview if you want complete isolation.
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">5</span>
+      <span class="step-title">Configure Deploy Contexts</span>
+      <div class="step-content">
+        <p>To set different environment variables per context:</p>
+        <ol>
+          <li>In <strong>Environment variables</strong>, click on a variable</li>
+          <li>Click <strong>"Options"</strong> → <strong>"Edit scopes"</strong></li>
+          <li>Select which contexts the variable applies to:
+            <ul>
+              <li><strong>Production</strong> - Live site</li>
+              <li><strong>Deploy previews</strong> - PR preview builds</li>
+              <li><strong>Branch deploys</strong> - Non-production branches</li>
+              <li><strong>Local development</strong> - When using <code>netlify dev</code></li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">6</span>
+      <span class="step-title">Verify netlify.toml Configuration</span>
+      <div class="step-content">
+        <p>Ensure your project has a <code>netlify.toml</code> file:</p>
+        <pre><code>[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200</code></pre>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">7</span>
+      <span class="step-title">Deploy Your Site</span>
+      <div class="step-content">
+        <p><strong>Automatic deploys:</strong> Push to your main branch - Netlify deploys automatically.</p>
+        <p><strong>Manual deploy from CLI:</strong></p>
+        <div class="command-block">
+          <code>netlify deploy --prod</code>
+        </div>
+        <p><strong>Preview deploy (for testing):</strong></p>
+        <div class="command-block">
+          <code>netlify deploy</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">8</span>
+      <span class="step-title">Local Development with Netlify</span>
+      <div class="step-content">
+        <p>To test functions locally with environment variables:</p>
+        <div class="command-block">
+          <code>netlify dev</code>
+        </div>
+        <p>This:</p>
+        <ul>
+          <li>Starts your Vite dev server</li>
+          <li>Runs Netlify Functions locally</li>
+          <li>Injects environment variables from Netlify</li>
+          <li>Proxies <code>/api/*</code> to your functions</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">9</span>
+      <span class="step-title">Set Up Custom Domain (Optional)</span>
+      <div class="step-content">
+        <ol>
+          <li>Go to <strong>Site settings</strong> → <strong>Domain management</strong></li>
+          <li>Click <strong>"Add custom domain"</strong></li>
+          <li>Enter your domain name</li>
+          <li>Follow DNS configuration instructions:
+            <ul>
+              <li><strong>Option A:</strong> Point nameservers to Netlify</li>
+              <li><strong>Option B:</strong> Add CNAME/A records at your registrar</li>
+            </ul>
+          </li>
+          <li>Wait for DNS propagation (can take up to 48 hours)</li>
+          <li>HTTPS is automatically provisioned via Let's Encrypt</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Useful Netlify CLI Commands</h3>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Purpose</th>
+        </tr>
+        <tr>
+          <td><code>netlify dev</code></td>
+          <td>Local development with functions</td>
+        </tr>
+        <tr>
+          <td><code>netlify deploy</code></td>
+          <td>Deploy preview build</td>
+        </tr>
+        <tr>
+          <td><code>netlify deploy --prod</code></td>
+          <td>Deploy to production</td>
+        </tr>
+        <tr>
+          <td><code>netlify env:list</code></td>
+          <td>List environment variables</td>
+        </tr>
+        <tr>
+          <td><code>netlify env:set KEY value</code></td>
+          <td>Set environment variable</td>
+        </tr>
+        <tr>
+          <td><code>netlify open</code></td>
+          <td>Open site in browser</td>
+        </tr>
+        <tr>
+          <td><code>netlify open:admin</code></td>
+          <td>Open Netlify dashboard</td>
+        </tr>
+        <tr>
+          <td><code>netlify logs</code></td>
+          <td>View function logs</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Project Setup -->
+  <section id="project-setup">
+    <h2>New Project Setup</h2>
+    <p>Complete walkthrough for creating a new project from scratch.</p>
+
+    <div class="step-container">
+      <span class="step-number">1</span>
+      <span class="step-title">Create Project Directory</span>
+      <div class="step-content">
+        <div class="command-block">
+          <code>mkdir my-new-project && cd my-new-project</code>
+        </div>
+        <div class="command-block">
+          <code>git init</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">2</span>
+      <span class="step-title">Copy Scaffolding Files</span>
+      <div class="step-content">
+        <div class="command-block">
+          <code>cp -r /path/to/ProjectScaffolding/.windsurf ./</code>
+        </div>
+        <div class="command-block">
+          <code>cp /path/to/ProjectScaffolding/db_ref.md ./</code>
+        </div>
+        <div class="command-block">
+          <code>cp /path/to/ProjectScaffolding/goldScaffoldingPlan.md ./</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">3</span>
+      <span class="step-title">Create Vite Project</span>
+      <div class="step-content">
+        <div class="command-block">
+          <code>npm create vite@latest . -- --template react-ts</code>
+        </div>
+        <p>Note: The <code>.</code> creates the project in the current directory.</p>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">4</span>
+      <span class="step-title">Install Dependencies</span>
+      <div class="step-content">
+        <pre><code># Core
+npm install react-router-dom
+
+# Tailwind
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+# shadcn/ui prerequisites
+npm install -D @types/node
+npm install class-variance-authority clsx tailwind-merge lucide-react
+
+# Backend
+npm install @netlify/functions @neondatabase/serverless
+
+# Auth
+npm install jsonwebtoken bcryptjs
+npm install -D @types/jsonwebtoken @types/bcryptjs
+
+# Dev tools
+npm install -D eslint prettier vitest</code></pre>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">5</span>
+      <span class="step-title">Initialize shadcn/ui</span>
+      <div class="step-content">
+        <div class="command-block">
+          <code>npx shadcn@latest init</code>
+        </div>
+        <p>Select: TypeScript: Yes, Style: Default, Base color: Slate, CSS variables: Yes</p>
+        <div class="command-block">
+          <code>npx shadcn@latest add button input label card form</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">6</span>
+      <span class="step-title">Create Configuration Files</span>
+      <div class="step-content">
+        <p>Copy configuration files from <code>goldScaffoldingPlan.md</code>:</p>
+        <ul>
+          <li><code>netlify.toml</code> - Netlify configuration</li>
+          <li><code>vite.config.ts</code> - Vite configuration with path aliases</li>
+          <li><code>tsconfig.json</code> - TypeScript strict mode</li>
+          <li><code>.env.example</code> - Environment variable template</li>
+          <li><code>.gitignore</code> - Git ignore patterns</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">7</span>
+      <span class="step-title">Set Up Environment Variables</span>
+      <div class="step-content">
+        <p>Create <code>.env.local</code> (gitignored):</p>
+        <pre><code>DATABASE_URL=your-neon-dev-branch-connection-string
+JWT_SECRET=your-local-development-secret</code></pre>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">8</span>
+      <span class="step-title">Create Directory Structure</span>
+      <div class="step-content">
+        <pre><code>mkdir -p netlify/functions/api/auth
+mkdir -p src/components/auth src/components/layout
+mkdir -p src/contexts src/hooks src/lib src/pages/auth src/types
+mkdir -p migrations</code></pre>
+      </div>
+    </div>
+
+    <div class="step-container">
+      <span class="step-number">9</span>
+      <span class="step-title">Follow goldScaffoldingPlan.md</span>
+      <div class="step-content">
+        <p>Continue with Phase 6 (Authentication) and beyond from the scaffolding plan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Environment -->
+  <section id="environment">
+    <h2>Environment Configuration</h2>
+    
+    <div class="section">
+      <h3>Required Environment Variables</h3>
+      <table>
+        <tr>
+          <th>Variable</th>
+          <th>Description</th>
+          <th>Example</th>
+        </tr>
+        <tr>
+          <td><code>DATABASE_URL</code></td>
+          <td>Neon PostgreSQL connection string (pooled)</td>
+          <td><code>postgresql://user:pass@host/db?sslmode=require</code></td>
+        </tr>
+        <tr>
+          <td><code>JWT_SECRET</code></td>
+          <td>Secret for signing JWTs (min 32 chars)</td>
+          <td>Generate with <code>openssl rand -base64 32</code></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>Environment by Context</h3>
+      <table>
+        <tr>
+          <th>Context</th>
+          <th>DATABASE_URL</th>
+          <th>Where Configured</th>
+        </tr>
+        <tr>
+          <td>Local Development</td>
+          <td>Neon <code>dev</code> branch</td>
+          <td><code>.env.local</code></td>
+        </tr>
+        <tr>
+          <td>Preview Deploys</td>
+          <td>Neon <code>preview</code> branch</td>
+          <td>Netlify (deploy-preview context)</td>
+        </tr>
+        <tr>
+          <td>Production</td>
+          <td>Neon <code>main</code> branch</td>
+          <td>Netlify (production context)</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- Verification -->
+  <section id="verification">
+    <h2>Verification Checklist</h2>
+    <p>Complete these checks before considering your project ready:</p>
+
+    <div class="section">
+      <h3>Development Environment</h3>
+      <ul class="checklist">
+        <li><code>npm run dev</code> starts without errors</li>
+        <li><code>npm run build</code> completes successfully</li>
+        <li><code>npm run lint</code> passes</li>
+        <li><code>npm run typecheck</code> passes</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>Database</h3>
+      <ul class="checklist">
+        <li>Neon project created</li>
+        <li><code>main</code> and <code>dev</code> branches exist</li>
+        <li>Migrations run successfully</li>
+        <li><code>db_ref.md</code> updated with actual schema</li>
+        <li>Connection works from Netlify Functions</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>Authentication</h3>
+      <ul class="checklist">
+        <li>Sign up creates user and returns token</li>
+        <li>Sign in authenticates correctly</li>
+        <li><code>/api/auth/me</code> returns user data</li>
+        <li>Invalid tokens return 401</li>
+        <li>Session persists across page refresh</li>
+        <li>Protected routes redirect when unauthenticated</li>
+        <li>Sign out clears token</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>Deployment</h3>
+      <ul class="checklist">
+        <li>Netlify site created and linked</li>
+        <li>Environment variables configured</li>
+        <li>Production deploy succeeds</li>
+        <li>HTTPS working</li>
+        <li>All checks pass on production URL</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Files -->
+  <section id="files">
+    <h2>File Reference</h2>
+    
+    <div class="section">
+      <h3>What to Keep in New Projects</h3>
+      <table>
+        <tr>
+          <th>File/Directory</th>
+          <th>Keep?</th>
+          <th>Notes</th>
+        </tr>
+        <tr>
+          <td><code>.windsurf/</code></td>
+          <td><strong>Yes</strong></td>
+          <td>Required for development standards</td>
+        </tr>
+        <tr>
+          <td><code>db_ref.md</code></td>
+          <td><strong>Yes</strong></td>
+          <td>Update with your actual schema</td>
+        </tr>
+        <tr>
+          <td><code>goldScaffoldingPlan.md</code></td>
+          <td>Optional</td>
+          <td>Delete after setup complete</td>
+        </tr>
+        <tr>
+          <td><code>README.md</code></td>
+          <td>Replace</td>
+          <td>Write project-specific README</td>
+        </tr>
+        <tr>
+          <td><code>USAGE_GUIDE.md</code></td>
+          <td>No</td>
+          <td>Delete - only for scaffolding repo</td>
+        </tr>
+        <tr>
+          <td><code>USAGE_GUIDE.html</code></td>
+          <td>No</td>
+          <td>Delete - only for scaffolding repo</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>Rules Files Summary</h3>
+      <table>
+        <tr>
+          <th>File</th>
+          <th>Covers</th>
+        </tr>
+        <tr>
+          <td><code>security.md</code></td>
+          <td>Secrets, auth, logging, OWASP</td>
+        </tr>
+        <tr>
+          <td><code>code-quality.md</code></td>
+          <td>TypeScript, naming, organization</td>
+        </tr>
+        <tr>
+          <td><code>testing.md</code></td>
+          <td>Unit/integration tests, coverage</td>
+        </tr>
+        <tr>
+          <td><code>database-design.md</code></td>
+          <td>Schema, migrations, db_ref.md</td>
+        </tr>
+        <tr>
+          <td><code>neon-database.md</code></td>
+          <td>Serverless connections, branching</td>
+        </tr>
+        <tr>
+          <td><code>api-design.md</code></td>
+          <td>REST, errors, responses</td>
+        </tr>
+        <tr>
+          <td><code>cleanup.md</code></td>
+          <td>Refactoring, soft deletes</td>
+        </tr>
+        <tr>
+          <td><code>frontend-components.md</code></td>
+          <td>React, Tailwind, shadcn/ui</td>
+        </tr>
+        <tr>
+          <td><code>ai-gateway.md</code></td>
+          <td>Netlify AI Gateway</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <h2>FAQ</h2>
+
+    <div class="section">
+      <h4>Do I need to keep goldScaffoldingPlan.md in my new project?</h4>
+      <p>No. Once setup is complete, you can delete it. The <code>.windsurf/</code> rules are what matter for ongoing development.</p>
+    </div>
+
+    <div class="section">
+      <h4>Can I modify the rules files?</h4>
+      <p>Yes, but consider whether changes should apply to all projects. If so, update the original ProjectScaffolding repo. If project-specific, document the deviation.</p>
+    </div>
+
+    <div class="section">
+      <h4>What if I need a different tech stack?</h4>
+      <p>The rules are somewhat stack-agnostic (TypeScript, testing, security principles apply broadly). Modify as needed, but maintain the spirit of the standards.</p>
+    </div>
+
+    <div class="section">
+      <h4>How do I update my project when ProjectScaffolding changes?</h4>
+      <p>Manually review changes to ProjectScaffolding and apply relevant updates to your <code>.windsurf/</code> rules. There's no automatic sync.</p>
+    </div>
+
+    <div class="section">
+      <h4>Why use Neon branches instead of separate databases?</h4>
+      <p>Neon branches are instant, free, and share the same schema. They're perfect for preview deploys and development isolation without managing multiple database instances.</p>
+    </div>
+
+    <div class="section">
+      <h4>Why pooled connections for Netlify Functions?</h4>
+      <p>Serverless functions can spawn many instances. Without pooling, each instance opens a new connection, quickly exhausting database connection limits. Pooled connections share a connection pool.</p>
+    </div>
+  </section>
+
+  <hr>
+  <p style="text-align: center; color: var(--text-muted);">
+    Project Scaffolding Template • Built for consistent, production-ready applications
+  </p>
+
+</body>
+</html>
