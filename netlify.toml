@@ -85,6 +85,27 @@
   to = "/.netlify/functions/admin-memberships"
   status = 200
 
+# Extraction API
+[[redirects]]
+  from = "/api/extraction/inventory"
+  to = "/.netlify/functions/extraction-inventory"
+  status = 200
+
+[[redirects]]
+  from = "/api/extraction/jobs"
+  to = "/.netlify/functions/extraction-jobs"
+  status = 200
+
+[[redirects]]
+  from = "/api/extraction/trigger"
+  to = "/.netlify/functions/extraction-trigger"
+  status = 200
+
+[[redirects]]
+  from = "/api/extraction/worker"
+  to = "/.netlify/functions/extraction-worker"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
