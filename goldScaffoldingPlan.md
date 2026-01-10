@@ -88,11 +88,45 @@ netlify --version
 
 ## Phase 1: Project Initialization
 
-### Step 1.1: Create Vite React Project
+### Step 1.0: Prepare Existing Directory (If Applicable)
+
+This scaffolding plan assumes the project directory may already contain:
+- `.windsurf/` rules directory
+- `db_ref.md` database reference
+- `README.md` and other documentation
+- `.git/` version control
+
+**If the directory is NOT empty:**
 
 ```bash
-npm create vite@latest project-name -- --template react-ts
-cd project-name
+# Initialize package.json first (skip if exists)
+npm init -y
+
+# Install Vite and React manually
+npm install vite @vitejs/plugin-react
+npm install react react-dom
+npm install -D typescript @types/react @types/react-dom
+```
+
+**If starting fresh in an empty directory:**
+
+```bash
+npm create vite@latest . -- --template react-ts
+```
+
+> **Note:** The `npm create vite@latest` command will fail if the directory contains files. Use the manual installation approach above for existing projects.
+
+### Step 1.1: Create Core Source Files
+
+After installing dependencies, create the minimal Vite + React structure:
+
+```bash
+# Create source directory structure
+mkdir -p src
+
+# Create entry files (templates provided in Phase 2)
+touch src/main.tsx src/App.tsx src/index.css src/vite-env.d.ts
+touch index.html
 ```
 
 ### Step 1.2: Install Core Dependencies
@@ -131,6 +165,9 @@ npm install -D prettier eslint-config-prettier
 # Testing
 npm install -D vitest @testing-library/react @testing-library/jest-dom
 npm install -D @testing-library/user-event jsdom
+
+# Tailwind animation plugin (required for shadcn/ui)
+npm install -D tailwindcss-animate
 ```
 
 ### Step 1.4: Initialize shadcn/ui
@@ -260,6 +297,131 @@ project-name/
 | `src/types/`               | Shared TypeScript types    | Export interfaces for API boundaries                  |
 | `netlify/functions/api/`   | Serverless endpoints       | One function per endpoint; consistent error handling  |
 | `migrations/`              | SQL migrations             | Sequential numbering; never modify after deployment   |
+
+### Step 2.1: Core Entry Files
+
+These files must be created when scaffolding in an existing directory.
+
+**`index.html`** (project root):
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Name</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+```
+
+**`src/main.tsx`**:
+
+```typescript
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+```
+
+**`src/App.tsx`**:
+
+```typescript
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<div>Home</div>} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+export default App
+```
+
+**`src/index.css`**:
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+```
+
+**`src/vite-env.d.ts`**:
+
+```typescript
+/// <reference types="vite/client" />
+```
 
 ---
 
@@ -395,6 +557,22 @@ Update `tsconfig.json`:
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+Create `tsconfig.node.json`:
+
+```json
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true
+  },
+  "include": ["vite.config.ts", "vitest.config.ts"]
 }
 ```
 
