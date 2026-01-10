@@ -1,4 +1,5 @@
 import type { Context } from '@netlify/functions';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface AiChatRequest {
   message: string;
@@ -97,45 +98,20 @@ async function queryAnthropic(message: string): Promise<ProviderResult> {
 
 async function queryGemini(message: string): Promise<ProviderResult> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const baseUrl = process.env.GOOGLE_GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
 
   if (!apiKey) {
     return { ok: false, error: 'Gemini API key not configured' };
   }
 
   try {
-    // When using Netlify AI Gateway, use header auth; otherwise use query param
-    const isGateway = baseUrl.includes('gateway.netlify.app');
-    const url = isGateway
-      ? `${baseUrl}/v1beta/models/gemini-1.5-flash:generateContent`
-      : `${baseUrl}/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (isGateway) {
-      headers['x-goog-api-key'] = apiKey;
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: message }] }],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return { ok: false, error: `Gemini error: ${response.status}` };
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(message);
+    const text = result.response.text();
     return { ok: true, text };
   } catch (error) {
-    return { ok: false, error: 'Failed to connect to Gemini' };
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { ok: false, error: `Gemini error: ${errorMessage}` };
   }
 }
 
