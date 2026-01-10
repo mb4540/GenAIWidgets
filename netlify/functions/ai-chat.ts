@@ -29,10 +29,11 @@ interface AiChatResponse {
 async function queryOpenAI(message: string, model: string): Promise<ProviderResult> {
   try {
     const openai = new OpenAI();
+    const isGpt5OrNewer = model.startsWith('gpt-5') || model.startsWith('gpt-4.1') || model.startsWith('o3') || model.startsWith('o4');
     const completion = await openai.chat.completions.create({
       model,
       messages: [{ role: 'user', content: message }],
-      max_tokens: 1024,
+      ...(isGpt5OrNewer ? { max_completion_tokens: 1024 } : { max_tokens: 1024 }),
     });
 
     const text = completion.choices?.[0]?.message?.content || 'No response';
@@ -83,7 +84,7 @@ async function queryGemini(message: string, model: string): Promise<ProviderResu
           'x-goog-api-key': apiKey,
         },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: message }] }],
+          contents: [{ role: 'user', parts: [{ text: message }] }],
         }),
       }
     );

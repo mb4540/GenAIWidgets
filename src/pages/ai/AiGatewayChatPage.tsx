@@ -178,7 +178,7 @@ export default function AiGatewayChatPage() {
                   </div>
                 ) : message.results ? (
                   <div className="grid gap-4 md:grid-cols-3">
-                    {(Object.keys(message.results) as Provider[]).map((provider) => {
+                    {(['openai', 'anthropic', 'gemini'] as Provider[]).map((provider) => {
                       const result = message.results?.[provider];
                       if (!result) return null;
                       return (
