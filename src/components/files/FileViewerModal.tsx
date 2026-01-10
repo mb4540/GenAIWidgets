@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { X, Download, Maximize2, Minimize2 } from 'lucide-react';
+import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
 
 function TextFileViewer({ blobUrl }: { blobUrl: string }): React.ReactElement {
   const [content, setContent] = useState<string>('Loading...');
@@ -15,6 +17,103 @@ function TextFileViewer({ blobUrl }: { blobUrl: string }): React.ReactElement {
     <pre className="w-full h-full overflow-auto p-4 bg-gray-900 text-gray-100 text-sm font-mono rounded">
       {content}
     </pre>
+  );
+}
+
+function DocxViewer({ blobUrl }: { blobUrl: string }): React.ReactElement {
+  const [html, setHtml] = useState<string>('<p>Loading document...</p>');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(blobUrl)
+      .then(res => res.arrayBuffer())
+      .then(arrayBuffer => mammoth.convertToHtml({ arrayBuffer }))
+      .then(result => {
+        setHtml(result.value);
+      })
+      .catch(() => setError('Failed to load document'));
+  }, [blobUrl]);
+
+  if (error) {
+    return <div className="text-red-500 text-center p-4">{error}</div>;
+  }
+
+  return (
+    <div 
+      className="w-full h-full overflow-auto p-6 bg-white prose prose-sm max-w-none"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
+
+function XlsxViewer({ blobUrl }: { blobUrl: string }): React.ReactElement {
+  const [sheets, setSheets] = useState<{ name: string; data: string[][] }[]>([]);
+  const [activeSheet, setActiveSheet] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(blobUrl)
+      .then(res => res.arrayBuffer())
+      .then(arrayBuffer => {
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const parsedSheets = workbook.SheetNames.map(name => {
+          const sheet = workbook.Sheets[name];
+          const data = sheet ? XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 }) : [];
+          return { name, data };
+        });
+        setSheets(parsedSheets);
+      })
+      .catch(() => setError('Failed to load spreadsheet'));
+  }, [blobUrl]);
+
+  if (error) {
+    return <div className="text-red-500 text-center p-4">{error}</div>;
+  }
+
+  if (sheets.length === 0) {
+    return <div className="text-center p-4">Loading spreadsheet...</div>;
+  }
+
+  const currentSheet = sheets[activeSheet];
+
+  return (
+    <div className="w-full h-full flex flex-col">
+      {sheets.length > 1 && (
+        <div className="flex gap-1 p-2 bg-gray-100 dark:bg-gray-700 border-b overflow-x-auto">
+          {sheets.map((sheet, index) => (
+            <button
+              key={sheet.name}
+              onClick={() => setActiveSheet(index)}
+              className={`px-3 py-1 text-sm rounded whitespace-nowrap ${
+                index === activeSheet
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-500'
+              }`}
+            >
+              {sheet.name}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex-1 overflow-auto">
+        <table className="w-full border-collapse text-sm">
+          <tbody>
+            {currentSheet?.data.map((row, rowIndex) => (
+              <tr key={rowIndex} className={rowIndex === 0 ? 'bg-gray-200 dark:bg-gray-600 font-semibold' : ''}>
+                {row.map((cell, cellIndex) => (
+                  <td
+                    key={cellIndex}
+                    className="border border-gray-300 dark:border-gray-600 px-2 py-1 whitespace-nowrap"
+                  >
+                    {cell ?? ''}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -147,12 +246,16 @@ export default function FileViewerModal({ file, isOpen, onClose }: FileViewerMod
   const isAudio = file.mimeType?.startsWith('audio/');
   const isPdf = file.mimeType === 'application/pdf';
   const isText = file.mimeType?.startsWith('text/') || file.mimeType === 'application/json';
-  const isOfficeDoc = file.mimeType?.includes('word') || 
-                      file.mimeType?.includes('document') || 
-                      file.mimeType?.includes('sheet') || 
-                      file.mimeType?.includes('excel') ||
-                      file.mimeType?.includes('presentation') ||
-                      file.mimeType?.includes('powerpoint');
+  const isDocx = file.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                    file.name.toLowerCase().endsWith('.docx');
+  const isXlsx = file.mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                    file.mimeType === 'application/vnd.ms-excel' ||
+                    file.name.toLowerCase().endsWith('.xlsx') ||
+                    file.name.toLowerCase().endsWith('.xls');
+  const isPptx = file.mimeType?.includes('presentation') ||
+                    file.mimeType?.includes('powerpoint') ||
+                    file.name.toLowerCase().endsWith('.pptx') ||
+                    file.name.toLowerCase().endsWith('.ppt');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -259,11 +362,19 @@ export default function FileViewerModal({ file, isOpen, onClose }: FileViewerMod
                 <TextFileViewer blobUrl={blobUrl} />
               )}
 
-              {isOfficeDoc && (
+              {isDocx && (
+                <DocxViewer blobUrl={blobUrl} />
+              )}
+
+              {isXlsx && (
+                <XlsxViewer blobUrl={blobUrl} />
+              )}
+
+              {isPptx && (
                 <div className="flex flex-col items-center justify-center h-full text-center">
-                  <div className="text-6xl mb-4">📄</div>
+                  <div className="text-6xl mb-4">📊</div>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
-                    Office documents cannot be previewed in the browser
+                    PowerPoint files cannot be previewed in the browser
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
                     Click the download button to view this file
@@ -278,7 +389,7 @@ export default function FileViewerModal({ file, isOpen, onClose }: FileViewerMod
                 </div>
               )}
 
-              {!isImage && !isVideo && !isAudio && !isPdf && !isText && !isOfficeDoc && (
+              {!isImage && !isVideo && !isAudio && !isPdf && !isText && !isDocx && !isXlsx && !isPptx && (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <div className="text-6xl mb-4">📁</div>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">
