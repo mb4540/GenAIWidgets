@@ -85,6 +85,11 @@
   to = "/.netlify/functions/admin-memberships"
   status = 200
 
+[[redirects]]
+  from = "/api/admin/prompts"
+  to = "/.netlify/functions/admin-prompts"
+  status = 200
+
 # Extraction API
 [[redirects]]
   from = "/api/extraction/inventory"

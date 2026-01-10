@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Folder, File, Upload, FolderPlus, Trash2, Download, ChevronRight, Home, Eye } from 'lucide-react';
+import { Folder, File, Upload, FolderPlus, Trash2, Download, ChevronRight, Home, Eye, Sparkles, Clock, Check, X, Loader2 } from 'lucide-react';
 import FileViewerModal, { isViewableFile } from '@/components/files/FileViewerModal';
 
 interface FileItem {
@@ -11,6 +11,8 @@ interface FileItem {
   size: number | null;
   createdAt: string;
   updatedAt: string;
+  extractionStatus?: 'pending' | 'processing' | 'extracted' | 'failed' | null;
+  chunkCount?: number | null;
 }
 
 interface FolderItem {
@@ -59,6 +61,7 @@ export default function FilesPage(): React.ReactElement {
   const [newFolderName, setNewFolderName] = useState('');
   const [uploading, setUploading] = useState(false);
   const [viewingFile, setViewingFile] = useState<FileItem | null>(null);
+  const [extractingFileId, setExtractingFileId] = useState<string | null>(null);
 
   const fetchFiles = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -201,6 +204,48 @@ export default function FilesPage(): React.ReactElement {
       }
     } catch {
       setError('Failed to delete file');
+    }
+  };
+
+  const handleExtract = async (fileId: string): Promise<void> => {
+    setExtractingFileId(fileId);
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      const triggerResponse = await fetch('/api/extraction/trigger', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ blobId: fileId }),
+      });
+
+      const triggerData = (await triggerResponse.json()) as { success: boolean; error?: string };
+      if (!triggerData.success) {
+        setError(triggerData.error || 'Failed to trigger extraction');
+        return;
+      }
+
+      const workerResponse = await fetch('/api/extraction/worker', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ processNext: true }),
+      });
+
+      const workerData = (await workerResponse.json()) as { success: boolean; error?: string };
+      if (!workerData.success) {
+        setError(workerData.error || 'Extraction failed');
+      }
+
+      void fetchFiles();
+    } catch {
+      setError('Failed to extract file');
+    } finally {
+      setExtractingFileId(null);
     }
   };
 
@@ -398,6 +443,41 @@ export default function FilesPage(): React.ReactElement {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {/* Extraction Status/Button */}
+                {extractingFileId === file.id ? (
+                  <span className="p-2 text-blue-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </span>
+                ) : file.extractionStatus === 'extracted' ? (
+                  <span className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 bg-green-50 rounded" title={`${file.chunkCount || 0} chunks extracted`}>
+                    <Check className="h-3 w-3" />
+                    {file.chunkCount || 0}
+                  </span>
+                ) : file.extractionStatus === 'processing' ? (
+                  <span className="p-2 text-blue-500" title="Processing">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </span>
+                ) : file.extractionStatus === 'pending' ? (
+                  <span className="p-2 text-yellow-500" title="Pending extraction">
+                    <Clock className="h-4 w-4" />
+                  </span>
+                ) : file.extractionStatus === 'failed' ? (
+                  <button
+                    onClick={() => void handleExtract(file.id)}
+                    className="p-2 text-red-500 hover:text-red-600"
+                    title="Extraction failed - click to retry"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => void handleExtract(file.id)}
+                    className="p-2 text-muted-foreground hover:text-primary"
+                    title="Extract for RAG"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </button>
+                )}
                 {isViewableFile(file.mimeType) && (
                   <button
                     onClick={() => setViewingFile(file)}

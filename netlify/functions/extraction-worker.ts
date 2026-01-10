@@ -84,10 +84,57 @@ interface ExtractedContent {
   fullText?: string;
 }
 
+interface PromptConfig {
+  modelProvider: string;
+  modelName: string;
+  systemPrompt: string | null;
+  userPromptTemplate: string;
+  temperature: number;
+  maxTokens: number;
+}
+
+interface PromptRow {
+  model_provider: string;
+  model_name: string;
+  system_prompt: string | null;
+  user_prompt_template: string;
+  temperature: string;
+  max_tokens: number;
+}
+
+async function getPromptConfig(functionName: string): Promise<PromptConfig> {
+  const DATABASE_URL = process.env.DATABASE_URL;
+  if (!DATABASE_URL) {
+    throw new Error('DATABASE_URL not configured');
+  }
+
+  const sql = neon(DATABASE_URL);
+  const result = await sql`
+    SELECT model_provider, model_name, system_prompt, user_prompt_template, temperature, max_tokens
+    FROM prompts 
+    WHERE function_name = ${functionName} AND is_active = true
+  ` as PromptRow[];
+
+  if (!result[0]) {
+    throw new Error(`No active prompt found for function: ${functionName}`);
+  }
+
+  const row = result[0];
+  return {
+    modelProvider: row.model_provider,
+    modelName: row.model_name,
+    systemPrompt: row.system_prompt,
+    userPromptTemplate: row.user_prompt_template,
+    temperature: parseFloat(row.temperature),
+    maxTokens: row.max_tokens,
+  };
+}
+
 async function extractWithGemini(
   fileContent: ArrayBuffer,
   fileName: string,
-  mimeType: string | null
+  mimeType: string | null,
+  promptConfig: PromptConfig
 ): Promise<ExtractedContent> {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   const GEMINI_BASE_URL = process.env.GOOGLE_GEMINI_BASE_URL;
@@ -97,21 +144,9 @@ async function extractWithGemini(
   }
 
   const base64Content = Buffer.from(fileContent).toString('base64');
-  
-  const prompt = `Extract the text content from this document. Return a JSON object with:
-- title: the document title if identifiable
-- language: the primary language code (e.g., "en", "es", "fr")
-- pages: an array of page objects, each with:
-  - pageNumber: the page number (1-indexed)
-  - text: the extracted text for that page
-  - headings: any section headings found on that page
-
-If the document doesn't have clear pages (like a text file), return a single page with pageNumber 1.
-
-Return ONLY valid JSON, no markdown formatting or explanation.`;
 
   const baseUrl = GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
-  const apiUrl = `${baseUrl}/v1beta/models/gemini-2.5-pro-preview-05-06:generateContent?key=${GEMINI_API_KEY}`;
+  const apiUrl = `${baseUrl}/v1beta/models/${promptConfig.modelName}:generateContent?key=${GEMINI_API_KEY}`;
 
   const response = await fetch(apiUrl, {
       method: 'POST',
@@ -119,7 +154,7 @@ Return ONLY valid JSON, no markdown formatting or explanation.`;
       body: JSON.stringify({
         contents: [{
           parts: [
-            { text: prompt },
+            { text: promptConfig.userPromptTemplate },
             {
               inline_data: {
                 mime_type: mimeType || 'application/octet-stream',
@@ -129,8 +164,8 @@ Return ONLY valid JSON, no markdown formatting or explanation.`;
           ],
         }],
         generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 65536,
+          temperature: promptConfig.temperature,
+          maxOutputTokens: promptConfig.maxTokens,
         },
       }),
     }
@@ -382,7 +417,8 @@ export default async function handler(req: Request, _context: Context): Promise<
       return createErrorResponse('File not found in blob store', 404);
     }
 
-    const extracted = await extractWithGemini(fileBlob, blob.file_name, blob.mime_type);
+    const promptConfig = await getPromptConfig('extraction');
+    const extracted = await extractWithGemini(fileBlob, blob.file_name, blob.mime_type, promptConfig);
     const chunks = createChunkRecords(extracted, blob, job.extraction_version);
 
     const jsonlContent = chunks.map(c => JSON.stringify(c)).join('\n');
