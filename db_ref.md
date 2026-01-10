@@ -109,6 +109,69 @@ System-wide administrator access (cross-tenant).
 
 ---
 
+### folders
+
+Virtual directory structure for file organization.
+
+| Column      | Type        | Nullable | Default           | Description                    |
+|-------------|-------------|----------|-------------------|--------------------------------|
+| folder_id   | UUID        | NO       | gen_random_uuid() | Primary key                    |
+| tenant_id   | UUID        | NO       | -                 | Reference to tenant            |
+| user_id     | UUID        | NO       | -                 | User who created folder        |
+| folder_name | TEXT        | NO       | -                 | Folder display name            |
+| folder_path | TEXT        | NO       | -                 | Full path (e.g., /docs/reports/) |
+| parent_path | TEXT        | NO       | '/'               | Parent folder path             |
+| created_at  | TIMESTAMPTZ | NO       | now()             | Record creation time           |
+
+**Constraints:**
+- PRIMARY KEY: `folder_id`
+- FOREIGN KEY: `tenant_id` REFERENCES `tenants(tenant_id)` ON DELETE CASCADE
+- FOREIGN KEY: `user_id` REFERENCES `users(user_id)` ON DELETE SET NULL
+- UNIQUE: `(tenant_id, folder_path)`
+
+**Indexes:**
+- `idx_folders_tenant_id` on `tenant_id`
+- `idx_folders_path` on `(tenant_id, folder_path)`
+
+---
+
+### files
+
+File metadata with references to Netlify Blob storage.
+
+| Column     | Type        | Nullable | Default           | Description                      |
+|------------|-------------|----------|-------------------|----------------------------------|
+| file_id    | UUID        | NO       | gen_random_uuid() | Primary key                      |
+| tenant_id  | UUID        | NO       | -                 | Reference to tenant              |
+| user_id    | UUID        | NO       | -                 | User who uploaded file           |
+| blob_key   | TEXT        | NO       | -                 | UUID key in Netlify Blobs        |
+| file_name  | TEXT        | NO       | -                 | Original filename                |
+| file_path  | TEXT        | NO       | '/'               | Virtual directory path           |
+| mime_type  | TEXT        | YES      | NULL              | MIME type                        |
+| file_size  | BIGINT      | YES      | NULL              | Size in bytes                    |
+| etag       | TEXT        | YES      | NULL              | Blob ETag for versioning         |
+| created_at | TIMESTAMPTZ | NO       | now()             | Record creation time             |
+| updated_at | TIMESTAMPTZ | NO       | now()             | Last update time                 |
+
+**Constraints:**
+- PRIMARY KEY: `file_id`
+- FOREIGN KEY: `tenant_id` REFERENCES `tenants(tenant_id)` ON DELETE CASCADE
+- FOREIGN KEY: `user_id` REFERENCES `users(user_id)` ON DELETE SET NULL
+- UNIQUE: `blob_key`
+
+**Indexes:**
+- `idx_files_tenant_id` on `tenant_id`
+- `idx_files_user_id` on `user_id`
+- `idx_files_path` on `(tenant_id, file_path)`
+- `idx_files_blob_key` on `blob_key` (unique)
+
+**Notes:**
+- `blob_key` is a UUID used to store/retrieve files from Netlify Blobs
+- `file_path` is a virtual directory path, not the blob key
+- Files are stored in Netlify Blobs store named `user-files`
+
+---
+
 ## Enums
 
 ### membership_role
@@ -132,12 +195,20 @@ users (1) ──────< memberships >────── (1) tenants
 
 users (1) ──────< admins
          user_id
+
+tenants (1) ──────< folders
+           tenant_id
+
+tenants (1) ──────< files
+           tenant_id
 ```
 
 - A user can belong to multiple tenants (via memberships)
 - A tenant can have multiple users (via memberships)
 - Each membership has exactly one user and one tenant
 - A user can optionally be an admin (cross-tenant access)
+- A tenant can have multiple folders and files
+- Files reference Netlify Blobs via `blob_key`
 
 ---
 
@@ -151,14 +222,18 @@ users (1) ──────< admins
 | tenants     | 0                | [DATE]       |
 | memberships | 0                | [DATE]       |
 | admins      | 0                | [DATE]       |
+| folders     | 0                | [DATE]       |
+| files       | 0                | [DATE]       |
 
 ---
 
 ## Migration History
 
-| Version | File                   | Description                                    | Applied |
-|---------|------------------------|------------------------------------------------|---------|
-| 001     | 001_initial_schema.sql | Initial schema with users, tenants, memberships | [DATE]  |
+| Version | File                       | Description                                    | Applied |
+|---------|----------------------------|------------------------------------------------|---------|
+| 001     | 001_initial_schema.sql     | Initial schema with users, tenants, memberships | [DATE]  |
+| 002     | 002_admins_table.sql       | Add admins table for cross-tenant access       | [DATE]  |
+| 003     | 003_files_folders_tables.sql | Add files and folders tables for blob storage | [DATE]  |
 
 ---
 

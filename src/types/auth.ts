@@ -6,6 +6,7 @@ export interface User {
   phoneVerifiedAt?: string;
   createdAt: string;
   updatedAt: string;
+  isAdmin?: boolean;
 }
 
 export interface Tenant {

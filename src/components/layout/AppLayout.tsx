@@ -1,12 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, LogOut } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, LogOut, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/ai-gateway-chat', label: 'AI Gateway Chat', icon: MessageSquare },
+  { to: '/files', label: 'File Storage', icon: FolderOpen },
 ];
 
 export function AppLayout() {

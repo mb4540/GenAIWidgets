@@ -31,6 +31,38 @@
   to = "/.netlify/functions/ai-chat"
   status = 200
 
+# Files API
+[[redirects]]
+  from = "/api/files/list"
+  to = "/.netlify/functions/files-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/files/upload"
+  to = "/.netlify/functions/files-upload"
+  status = 200
+
+[[redirects]]
+  from = "/api/files/download"
+  to = "/.netlify/functions/files-download"
+  status = 200
+
+[[redirects]]
+  from = "/api/files/delete"
+  to = "/.netlify/functions/files-delete"
+  status = 200
+
+# Folders API
+[[redirects]]
+  from = "/api/folders/create"
+  to = "/.netlify/functions/folders-create"
+  status = 200
+
+[[redirects]]
+  from = "/api/folders/delete"
+  to = "/.netlify/functions/folders-delete"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"

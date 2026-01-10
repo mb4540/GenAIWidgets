@@ -25,6 +25,10 @@ interface TenantRow {
   role: 'owner' | 'member';
 }
 
+interface AdminRow {
+  is_admin: boolean;
+}
+
 export default async function handler(req: Request, _context: Context) {
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ success: false, error: 'Method not allowed' }), {
@@ -82,6 +86,13 @@ export default async function handler(req: Request, _context: Context) {
       tenant = tenants[0] || null;
     }
 
+    const adminResult = await sql`
+      SELECT EXISTS (
+        SELECT 1 FROM admins WHERE user_id = ${payload.userId}
+      ) AS is_admin
+    ` as AdminRow[];
+    const isAdmin = adminResult[0]?.is_admin ?? false;
+
     return new Response(JSON.stringify({
       success: true,
       user: {
@@ -92,6 +103,7 @@ export default async function handler(req: Request, _context: Context) {
         phoneVerifiedAt: user.phone_verified_at,
         createdAt: user.created_at,
         updatedAt: user.updated_at,
+        isAdmin,
       },
       tenant: tenant ? {
         id: tenant.tenant_id,
