@@ -104,18 +104,27 @@ async function queryGemini(message: string): Promise<ProviderResult> {
   }
 
   try {
-    const response = await fetch(
-      `${baseUrl}/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: message }] }],
-        }),
-      }
-    );
+    // When using Netlify AI Gateway, use header auth; otherwise use query param
+    const isGateway = baseUrl.includes('gateway.netlify.app');
+    const url = isGateway
+      ? `${baseUrl}/v1beta/models/gemini-1.5-flash:generateContent`
+      : `${baseUrl}/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (isGateway) {
+      headers['x-goog-api-key'] = apiKey;
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: message }] }],
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
