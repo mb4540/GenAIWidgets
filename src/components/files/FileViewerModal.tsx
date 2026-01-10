@@ -1,7 +1,22 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import DocViewer, { DocViewerRenderers } from '@cyntler/react-doc-viewer';
-import '@cyntler/react-doc-viewer/dist/index.css';
 import { X, Download, Maximize2, Minimize2 } from 'lucide-react';
+
+function TextFileViewer({ blobUrl }: { blobUrl: string }): React.ReactElement {
+  const [content, setContent] = useState<string>('Loading...');
+
+  useEffect(() => {
+    fetch(blobUrl)
+      .then(res => res.text())
+      .then(text => setContent(text))
+      .catch(() => setContent('Failed to load file content'));
+  }, [blobUrl]);
+
+  return (
+    <pre className="w-full h-full overflow-auto p-4 bg-gray-900 text-gray-100 text-sm font-mono rounded">
+      {content}
+    </pre>
+  );
+}
 
 interface FileItem {
   id: string;
@@ -130,6 +145,14 @@ export default function FileViewerModal({ file, isOpen, onClose }: FileViewerMod
   const isImage = file.mimeType?.startsWith('image/');
   const isVideo = file.mimeType?.startsWith('video/');
   const isAudio = file.mimeType?.startsWith('audio/');
+  const isPdf = file.mimeType === 'application/pdf';
+  const isText = file.mimeType?.startsWith('text/') || file.mimeType === 'application/json';
+  const isOfficeDoc = file.mimeType?.includes('word') || 
+                      file.mimeType?.includes('document') || 
+                      file.mimeType?.includes('sheet') || 
+                      file.mimeType?.includes('excel') ||
+                      file.mimeType?.includes('presentation') ||
+                      file.mimeType?.includes('powerpoint');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -224,18 +247,51 @@ export default function FileViewerModal({ file, isOpen, onClose }: FileViewerMod
                 </div>
               )}
 
-              {!isImage && !isVideo && !isAudio && (
-                <DocViewer
-                  documents={[{ uri: blobUrl, fileName: file.name }]}
-                  pluginRenderers={DocViewerRenderers}
-                  config={{
-                    header: {
-                      disableHeader: true,
-                      disableFileName: true,
-                    },
-                  }}
-                  style={{ height: '100%' }}
+              {isPdf && (
+                <iframe
+                  src={blobUrl}
+                  title={file.name}
+                  className="w-full h-full border-0"
                 />
+              )}
+
+              {isText && (
+                <TextFileViewer blobUrl={blobUrl} />
+              )}
+
+              {isOfficeDoc && (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="text-6xl mb-4">📄</div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    Office documents cannot be previewed in the browser
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
+                    Click the download button to view this file
+                  </p>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download {file.name}
+                  </button>
+                </div>
+              )}
+
+              {!isImage && !isVideo && !isAudio && !isPdf && !isText && !isOfficeDoc && (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="text-6xl mb-4">📁</div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    This file type cannot be previewed
+                  </p>
+                  <button
+                    onClick={handleDownload}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download {file.name}
+                  </button>
+                </div>
               )}
             </>
           )}
