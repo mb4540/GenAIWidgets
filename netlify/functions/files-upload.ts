@@ -2,10 +2,18 @@ import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { neon } from '@neondatabase/serverless';
 import { v4 as uuid } from 'uuid';
+import { createHash } from 'crypto';
 import { authenticateRequest, createErrorResponse, createSuccessResponse } from './lib/auth';
 
 const BLOB_STORE_NAME = 'user-files';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+async function computeSha256(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const hash = createHash('sha256');
+  hash.update(Buffer.from(buffer));
+  return hash.digest('hex');
+}
 
 export default async function handler(req: Request, _context: Context): Promise<Response> {
   if (req.method !== 'POST') {
@@ -72,6 +80,8 @@ export default async function handler(req: Request, _context: Context): Promise<
 
     const sql = neon(DATABASE_URL);
 
+    const byteHash = await computeSha256(file);
+
     const result = await sql`
       INSERT INTO files (tenant_id, user_id, blob_key, file_name, file_path, mime_type, file_size, etag)
       VALUES (${targetTenantId}, ${context.userId}, ${blobKey}, ${file.name}, ${filePath}, ${file.type}, ${file.size}, ${etag || null})
@@ -82,6 +92,12 @@ export default async function handler(req: Request, _context: Context): Promise<
     if (!inserted) {
       return createErrorResponse('Failed to save file metadata', 500);
     }
+
+    await sql`
+      INSERT INTO blob_inventory (tenant_id, source_store, blob_key, file_name, mime_type, size_bytes, byte_hash_sha256, etag, status)
+      VALUES (${targetTenantId}, ${BLOB_STORE_NAME}, ${blobKey}, ${file.name}, ${file.type}, ${file.size}, ${byteHash}, ${etag || null}, 'pending')
+      ON CONFLICT (source_store, blob_key) DO NOTHING
+    `;
 
     return createSuccessResponse({
       file: {
