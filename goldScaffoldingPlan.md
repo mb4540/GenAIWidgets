@@ -166,6 +166,9 @@ npm install -D prettier eslint-config-prettier
 npm install -D vitest @testing-library/react @testing-library/jest-dom
 npm install -D @testing-library/user-event jsdom
 
+# Tailwind v4 PostCSS plugin (required)
+npm install -D @tailwindcss/postcss
+
 # Tailwind animation plugin (required for shadcn/ui)
 npm install -D tailwindcss-animate
 ```
@@ -226,13 +229,11 @@ project-name/
 │   └── ai-gateway.md
 │
 ├── netlify/
-│   └── functions/                # Serverless API functions
-│       └── api/
-│           ├── auth/
-│           │   ├── signup.ts
-│           │   ├── signin.ts
-│           │   └── me.ts
-│           └── [domain]/         # Additional API domains
+│   └── functions/                # Serverless API functions (flat structure)
+│       ├── auth-signup.ts        # POST /api/auth/signup
+│       ├── auth-signin.ts        # POST /api/auth/signin
+│       ├── auth-me.ts            # GET /api/auth/me
+│       └── [domain]-[action].ts  # Additional endpoints (flat naming)
 │
 ├── migrations/                   # SQL migration files
 │   └── 001_initial_schema.sql
@@ -353,69 +354,51 @@ function App() {
 export default App
 ```
 
-**`src/index.css`**:
+**`src/index.css`** (Tailwind v4 syntax):
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 84% 4.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 84% 4.9%);
+  --color-primary: hsl(222.2 47.4% 11.2%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-accent: hsl(210 40% 96.1%);
+  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(222.2 84% 4.9%);
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
 }
 ```
+
+> **Tailwind v4 Changes:**
+> - Use `@import "tailwindcss"` instead of `@tailwind` directives
+> - Use `@theme` directive to define custom colors (prefixed with `--color-`)
+> - CSS variables use `hsl()` values directly, not space-separated numbers
+> - `@apply` is still supported but plain CSS is preferred for base styles
 
 **`src/vite-env.d.ts`**:
 
@@ -427,7 +410,19 @@ export default App
 
 ## Phase 3: Configuration Files
 
-### Step 3.1: Tailwind Configuration
+### Step 3.1: Tailwind CSS v4 Configuration
+
+> **Note:** Tailwind CSS v4 uses a different configuration approach than v3. The PostCSS plugin is now in a separate package `@tailwindcss/postcss`, and CSS uses the `@theme` directive instead of `@layer base` with CSS variables.
+
+Create `postcss.config.js`:
+
+```javascript
+export default {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+```
 
 Create/update `tailwind.config.js`:
 
@@ -588,14 +583,27 @@ Create `netlify.toml`:
 
 [build.environment]
   NODE_VERSION = "18"
+  NPM_FLAGS = "--include=dev"  # Required: ensures TypeScript is installed during build
 
 [functions]
   node_bundler = "esbuild"
 
 # API routes redirect to functions
+# IMPORTANT: Use flat function naming (auth-signup.ts, not api/auth/signup.ts)
+# Each function file maps to a specific route
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  from = "/api/auth/signup"
+  to = "/.netlify/functions/auth-signup"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/signin"
+  to = "/.netlify/functions/auth-signin"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/me"
+  to = "/.netlify/functions/auth-me"
   status = 200
 
 # SPA fallback - must be last
@@ -616,6 +624,10 @@ Create `netlify.toml`:
 [context.branch-deploy]
   environment = { NODE_ENV = "production" }
 ```
+
+> **Important Notes:**
+> - `NPM_FLAGS = "--include=dev"` is required because Netlify sets `NODE_ENV=production` which skips devDependencies by default. TypeScript must be installed for the build to succeed.
+> - Netlify Functions must use **flat file naming** (e.g., `auth-signup.ts`) rather than nested directories. Each redirect explicitly maps an API path to its function.
 
 ### Step 3.5: ESLint Configuration
 
