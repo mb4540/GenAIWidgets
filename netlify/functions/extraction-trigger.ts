@@ -55,12 +55,17 @@ export default async function handler(req: Request, _context: Context): Promise<
     if (blobId) {
       const blobs = await sql`
         SELECT * FROM blob_inventory
-        WHERE blob_id = ${blobId} AND status IN ('pending', 'failed')
+        WHERE blob_id = ${blobId}
       ` as BlobInventoryRow[];
 
       const blob = blobs[0];
       if (!blob) {
-        return createErrorResponse('Blob not found or already processed', 404);
+        return createErrorResponse('Blob not found in inventory', 404);
+      }
+      
+      // Allow re-extraction of any status except currently processing
+      if (blob.status === 'processing') {
+        return createErrorResponse('Extraction already in progress', 409);
       }
 
       await sql`
