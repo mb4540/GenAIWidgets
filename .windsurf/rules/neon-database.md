@@ -1,3 +1,6 @@
+---
+trigger: model_decision
+---
 # Neon Database Rules
 
 Neon-specific database usage standards for serverless PostgreSQL.

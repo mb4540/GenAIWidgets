@@ -1,3 +1,6 @@
+---
+trigger: model_decision
+---
 # API Design Rules
 
 Standards for Netlify Functions (serverless APIs).

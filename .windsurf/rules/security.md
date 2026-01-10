@@ -1,3 +1,6 @@
+---
+trigger: always_on
+---
 # Security Rules
 
 Standards for protecting sensitive data and preventing vulnerabilities in React + Netlify Functions applications.

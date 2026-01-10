@@ -1,3 +1,6 @@
+---
+trigger: always_on
+---
 # Code Quality Rules
 
 TypeScript and general coding standards for maintainable, readable, and consistent code.

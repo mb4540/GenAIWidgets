@@ -1,3 +1,6 @@
+---
+trigger: model_decision
+---
 # AI Gateway Rules
 
 Guidelines for using Netlify's AI Gateway to integrate AI models into your project.

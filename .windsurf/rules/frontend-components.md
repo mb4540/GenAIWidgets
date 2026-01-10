@@ -1,3 +1,6 @@
+---
+trigger: model_decision
+---
 # Frontend Components Rules
 
 Standards for React component development using TypeScript, Tailwind CSS, and shadcn/ui.

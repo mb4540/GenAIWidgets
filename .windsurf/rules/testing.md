@@ -1,3 +1,6 @@
+---
+trigger: model_decision
+---
 # Testing Rules
 
 Standards for testing React applications with Netlify Functions backend.

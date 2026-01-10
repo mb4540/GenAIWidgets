@@ -1,3 +1,6 @@
+---
+trigger: model_decision
+---
 # Database Design Rules
 
 PostgreSQL schema design and evolution standards.
