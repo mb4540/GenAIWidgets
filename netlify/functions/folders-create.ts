@@ -69,6 +69,9 @@ export default async function handler(req: Request, _context: Context): Promise<
     ` as { folder_id: string; created_at: string }[];
 
     const inserted = result[0];
+    if (!inserted) {
+      return createErrorResponse('Failed to create folder', 500);
+    }
 
     return createSuccessResponse({
       folder: {

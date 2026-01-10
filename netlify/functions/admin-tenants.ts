@@ -67,6 +67,9 @@ export default async function handler(req: Request, _context: Context): Promise<
       ` as TenantRow[];
 
       const tenant = result[0];
+      if (!tenant) {
+        return createErrorResponse('Failed to create tenant', 500);
+      }
       return createSuccessResponse({
         tenant: {
           id: tenant.tenant_id,
@@ -104,6 +107,9 @@ export default async function handler(req: Request, _context: Context): Promise<
       }
 
       const tenant = result[0];
+      if (!tenant) {
+        return createErrorResponse('Tenant not found', 404);
+      }
       return createSuccessResponse({
         tenant: {
           id: tenant.tenant_id,

@@ -79,6 +79,9 @@ export default async function handler(req: Request, _context: Context): Promise<
     ` as { file_id: string; created_at: string; updated_at: string }[];
 
     const inserted = result[0];
+    if (!inserted) {
+      return createErrorResponse('Failed to save file metadata', 500);
+    }
 
     return createSuccessResponse({
       file: {

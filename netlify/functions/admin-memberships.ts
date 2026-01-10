@@ -113,6 +113,9 @@ export default async function handler(req: Request, _context: Context): Promise<
       ` as { membership_id: string; created_at: string }[];
 
       const membership = result[0];
+      if (!membership) {
+        return createErrorResponse('Failed to create membership', 500);
+      }
 
       const details = await sql`
         SELECT t.name AS tenant_name, u.email AS user_email, u.full_name AS user_name
@@ -159,6 +162,9 @@ export default async function handler(req: Request, _context: Context): Promise<
       }
 
       const m = result[0];
+      if (!m) {
+        return createErrorResponse('Membership not found', 404);
+      }
       const details = await sql`
         SELECT t.name AS tenant_name, u.email AS user_email, u.full_name AS user_name
         FROM tenants t, users u

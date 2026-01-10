@@ -86,6 +86,9 @@ export default async function handler(req: Request, _context: Context): Promise<
       ` as UserRow[];
 
       const user = result[0];
+      if (!user) {
+        return createErrorResponse('Failed to create user', 500);
+      }
 
       if (isAdmin) {
         await sql`
@@ -155,6 +158,9 @@ export default async function handler(req: Request, _context: Context): Promise<
       }
 
       const user = updated[0];
+      if (!user) {
+        return createErrorResponse('User not found', 404);
+      }
       return createSuccessResponse({
         user: {
           id: user.user_id,
