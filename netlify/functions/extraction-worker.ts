@@ -90,9 +90,10 @@ async function extractWithGemini(
   mimeType: string | null
 ): Promise<ExtractedContent> {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const GEMINI_BASE_URL = process.env.GOOGLE_GEMINI_BASE_URL;
   
   if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY not configured');
+    throw new Error('GEMINI_API_KEY not configured - ensure Netlify AI Gateway is enabled');
   }
 
   const base64Content = Buffer.from(fileContent).toString('base64');
@@ -109,9 +110,10 @@ If the document doesn't have clear pages (like a text file), return a single pag
 
 Return ONLY valid JSON, no markdown formatting or explanation.`;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-05-06:generateContent?key=${GEMINI_API_KEY}`,
-    {
+  const baseUrl = GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
+  const apiUrl = `${baseUrl}/v1beta/models/gemini-2.5-pro-preview-05-06:generateContent?key=${GEMINI_API_KEY}`;
+
+  const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -136,7 +138,7 @@ Return ONLY valid JSON, no markdown formatting or explanation.`;
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    throw new Error(`Gemini API error via Netlify AI Gateway: ${response.status} - ${errorText}`);
   }
 
   const result = await response.json() as GeminiResponse;

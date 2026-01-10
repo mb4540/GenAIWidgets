@@ -1,5 +1,5 @@
 ---
-trigger: model_decision
+trigger: always
 ---
 # AI Gateway Rules
 
