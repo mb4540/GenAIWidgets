@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { AppLayout } from './components/layout/AppLayout'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/auth/LoginPage'
 import SignupPage from './pages/auth/SignupPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
+import AiGatewayChatPage from './pages/ai/AiGatewayChatPage'
 
 function App() {
   return (
@@ -16,9 +18,12 @@ function App() {
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/signup" element={<SignupPage />} />
 
-          {/* Protected routes */}
+          {/* Protected routes with app layout */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route element={<AppLayout />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/ai-gateway-chat" element={<AiGatewayChatPage />} />
+            </Route>
           </Route>
         </Routes>
       </AuthProvider>

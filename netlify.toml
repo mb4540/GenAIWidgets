@@ -26,6 +26,11 @@
   to = "/.netlify/functions/auth-me"
   status = 200
 
+[[redirects]]
+  from = "/api/ai/chat"
+  to = "/.netlify/functions/ai-chat"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
