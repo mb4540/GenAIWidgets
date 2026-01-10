@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Folder, File, Upload, FolderPlus, Trash2, Download, ChevronRight, Home } from 'lucide-react';
+import { Folder, File, Upload, FolderPlus, Trash2, Download, ChevronRight, Home, Eye } from 'lucide-react';
+import FileViewerModal, { isViewableFile } from '@/components/files/FileViewerModal';
 
 interface FileItem {
   id: string;
@@ -57,6 +58,7 @@ export default function FilesPage(): React.ReactElement {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [viewingFile, setViewingFile] = useState<FileItem | null>(null);
 
   const fetchFiles = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -396,6 +398,15 @@ export default function FilesPage(): React.ReactElement {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {isViewableFile(file.mimeType) && (
+                  <button
+                    onClick={() => setViewingFile(file)}
+                    className="p-2 text-muted-foreground hover:text-primary"
+                    title="View"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   onClick={() => handleDownload(file.id, file.name)}
                   className="p-2 text-muted-foreground hover:text-primary"
@@ -424,6 +435,13 @@ export default function FilesPage(): React.ReactElement {
           )}
         </div>
       )}
+
+      {/* File Viewer Modal */}
+      <FileViewerModal
+        file={viewingFile}
+        isOpen={viewingFile !== null}
+        onClose={() => setViewingFile(null)}
+      />
     </div>
   );
 }
