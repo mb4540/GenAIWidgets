@@ -1,19 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Layers, RefreshCw, Eye, Clock, Check, X, Loader2, FileText } from 'lucide-react';
-
-interface InventoryItem {
-  id: string;
-  tenantId: string;
-  sourceStore: string;
-  blobKey: string;
-  fileName: string;
-  mimeType: string | null;
-  sizeBytes: number | null;
-  status: string;
-  discoveredAt: string;
-  updatedAt: string;
-}
+import { Layers, RefreshCw, Loader2 } from 'lucide-react';
+import {
+  RagStatsCards,
+  RagStatusFilter,
+  RagInventoryTable,
+  type InventoryItem,
+} from './components';
 
 interface JobStats {
   queued: number;
@@ -40,41 +33,6 @@ function formatFileSize(bytes: number | null): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function getStatusBadge(status: string): React.ReactElement {
-  switch (status) {
-    case 'extracted':
-      return (
-        <span className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 bg-green-50 rounded">
-          <Check className="h-3 w-3" /> Extracted
-        </span>
-      );
-    case 'processing':
-      return (
-        <span className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 bg-blue-50 rounded">
-          <Loader2 className="h-3 w-3 animate-spin" /> Processing
-        </span>
-      );
-    case 'pending':
-      return (
-        <span className="flex items-center gap-1 px-2 py-1 text-xs text-yellow-600 bg-yellow-50 rounded">
-          <Clock className="h-3 w-3" /> Pending
-        </span>
-      );
-    case 'failed':
-      return (
-        <span className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded">
-          <X className="h-3 w-3" /> Failed
-        </span>
-      );
-    default:
-      return (
-        <span className="px-2 py-1 text-xs text-gray-500 bg-gray-50 rounded">
-          {status}
-        </span>
-      );
-  }
 }
 
 export default function RagPreprocessingPage(): React.ReactElement {
@@ -121,7 +79,7 @@ export default function RagPreprocessingPage(): React.ReactElement {
         setStats(data.summary);
       }
     } catch {
-      // Stats are optional, don't show error
+      // Stats are optional
     }
   }, [getAuthHeaders]);
 
@@ -142,23 +100,18 @@ export default function RagPreprocessingPage(): React.ReactElement {
         headers: getAuthHeaders(),
         body: JSON.stringify({ processAll: true }),
       });
-
       const triggerData = (await triggerResponse.json()) as { success: boolean; jobsCreated?: number; error?: string };
       if (!triggerData.success) {
         setError(triggerData.error || 'Failed to trigger extraction');
         return;
       }
-
       if (triggerData.jobsCreated && triggerData.jobsCreated > 0) {
-        const workerResponse = await fetch('/api/extraction/worker', {
+        await fetch('/api/extraction/worker', {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({ processNext: true }),
         });
-
-        await workerResponse.json();
       }
-
       void fetchInventory();
       void fetchStats();
     } catch {
@@ -175,20 +128,16 @@ export default function RagPreprocessingPage(): React.ReactElement {
         headers: getAuthHeaders(),
         body: JSON.stringify({ blobId }),
       });
-
       const triggerData = (await triggerResponse.json()) as { success: boolean; error?: string };
       if (!triggerData.success) {
         setError(triggerData.error || 'Failed to trigger extraction');
         return;
       }
-
-      const workerResponse = await fetch('/api/extraction/worker', {
+      await fetch('/api/extraction/worker', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ processNext: true }),
       });
-
-      await workerResponse.json();
       void fetchInventory();
       void fetchStats();
     } catch {
@@ -231,113 +180,26 @@ export default function RagPreprocessingPage(): React.ReactElement {
         </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-foreground">{inventory.length}</div>
-          <div className="text-sm text-muted-foreground">Total Files</div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-yellow-600">{stats.queued}</div>
-          <div className="text-sm text-muted-foreground">Pending</div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-green-600">{stats.completed}</div>
-          <div className="text-sm text-muted-foreground">Extracted</div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-red-600">{stats.failed}</div>
-          <div className="text-sm text-muted-foreground">Failed</div>
-        </div>
-      </div>
+      <RagStatsCards
+        totalFiles={inventory.length}
+        pending={stats.queued}
+        completed={stats.completed}
+        failed={stats.failed}
+      />
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        {['all', 'pending', 'processing', 'extracted', 'failed'].map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`px-3 py-1 text-sm rounded-md ${
-              statusFilter === status
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
-      </div>
+      <RagStatusFilter
+        currentFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+      />
 
-      {/* Inventory Table */}
       {loading ? (
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
       ) : (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">File Name</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Type</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Size</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Discovered</th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {inventory.map((item) => (
-                <tr key={item.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{item.fileName}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {item.mimeType || 'Unknown'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {formatFileSize(item.sizeBytes)}
-                  </td>
-                  <td className="px-4 py-3">
-                    {getStatusBadge(item.status)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {new Date(item.discoveredAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {item.status === 'extracted' && (
-                        <button
-                          className="p-2 text-muted-foreground hover:text-primary"
-                          title="View chunks"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
-                      {(item.status === 'failed' || item.status === 'pending') && (
-                        <button
-                          onClick={() => void handleRetry(item.id)}
-                          className="p-2 text-muted-foreground hover:text-primary"
-                          title={item.status === 'failed' ? 'Retry' : 'Extract'}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {inventory.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                    No files in inventory
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <RagInventoryTable
+          inventory={inventory}
+          onRetry={(id) => void handleRetry(id)}
+          formatFileSize={formatFileSize}
+        />
       )}
     </div>
   );
