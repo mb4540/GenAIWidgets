@@ -46,7 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string): Promise<AuthResponse> => {
-    return auth.signInWithPassword(email, password);
+    const response = await auth.signInWithPassword(email, password);
+    if (response.success) {
+      const session = await auth.getSession();
+      if (session) {
+        setUser(session.user);
+        setTenant(session.tenant);
+      }
+    }
+    return response;
   };
 
   const signOut = async (): Promise<void> => {
