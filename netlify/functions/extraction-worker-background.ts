@@ -332,33 +332,16 @@ function createChunkRecords(
   return chunks;
 }
 
-export default async function handler(req: Request, _context: Context): Promise<Response> {
-  if (req.method !== 'POST') {
-    return createErrorResponse('Method not allowed', 405);
-  }
-
-  const authResult = await authenticateRequest(req);
-  if (!authResult.success) {
-    return createErrorResponse(authResult.error, authResult.status);
-  }
-
-  const { context } = authResult;
-  
-  if (!context.isAdmin) {
-    return createErrorResponse('Admin access required', 403);
-  }
-
+async function processExtraction(jobId: string | undefined, processNext: boolean | undefined): Promise<void> {
   const DATABASE_URL = process.env.DATABASE_URL;
   if (!DATABASE_URL) {
-    return createErrorResponse('Server configuration error', 500);
+    console.error('DATABASE_URL not configured');
+    return;
   }
 
   const sql = neon(DATABASE_URL);
 
   try {
-    const body = await req.json() as { jobId?: string; processNext?: boolean };
-    const { jobId, processNext } = body;
-
     let job: ExtractionJobRow | undefined;
 
     if (jobId) {
@@ -377,7 +360,8 @@ export default async function handler(req: Request, _context: Context): Promise<
     }
 
     if (!job) {
-      return createSuccessResponse({ message: 'No jobs to process' });
+      console.log('No jobs to process');
+      return;
     }
 
     const startTime = Date.now();
@@ -399,7 +383,7 @@ export default async function handler(req: Request, _context: Context): Promise<
         SET status = 'failed', error_message = 'Blob not found in inventory'
         WHERE job_id = ${job.job_id}
       `;
-      return createErrorResponse('Blob not found', 404);
+      return;
     }
 
     const sourceStore = getStore(SOURCE_STORE_NAME);
@@ -414,7 +398,7 @@ export default async function handler(req: Request, _context: Context): Promise<
       await sql`
         UPDATE blob_inventory SET status = 'failed' WHERE blob_id = ${blob.blob_id}
       `;
-      return createErrorResponse('File not found in blob store', 404);
+      return;
     }
 
     const promptConfig = await getPromptConfig('extraction');
@@ -451,27 +435,62 @@ export default async function handler(req: Request, _context: Context): Promise<
       UPDATE blob_inventory SET status = 'extracted' WHERE blob_id = ${blob.blob_id}
     `;
 
-    return createSuccessResponse({
-      jobId: job.job_id,
-      blobId: blob.blob_id,
-      fileName: blob.file_name,
-      chunkCount: chunks.length,
-      processingTimeMs: processingTime,
-      outputBlobKey,
-    });
+    console.log(`Extraction completed: ${job.job_id}, ${chunks.length} chunks, ${processingTime}ms`);
   } catch (error) {
-    console.error('Error in extraction-worker:', error);
+    console.error('Error in extraction processing:', error);
     
-    const body = await req.clone().json().catch(() => ({})) as { jobId?: string };
-    if (body.jobId) {
-      const sql = neon(DATABASE_URL);
-      await sql`
-        UPDATE extraction_jobs 
-        SET status = 'failed', error_message = ${error instanceof Error ? error.message : 'Unknown error'}
-        WHERE job_id = ${body.jobId}
-      `;
+    if (jobId) {
+      try {
+        await sql`
+          UPDATE extraction_jobs 
+          SET status = 'failed', error_message = ${error instanceof Error ? error.message : 'Unknown error'}
+          WHERE job_id = ${jobId}
+        `;
+      } catch (updateError) {
+        console.error('Failed to update job status:', updateError);
+      }
     }
+  }
+}
 
+export default async function handler(req: Request, _context: Context): Promise<Response> {
+  if (req.method !== 'POST') {
+    return createErrorResponse('Method not allowed', 405);
+  }
+
+  const authResult = await authenticateRequest(req);
+  if (!authResult.success) {
+    return createErrorResponse(authResult.error, authResult.status);
+  }
+
+  const { context } = authResult;
+  
+  if (!context.isAdmin) {
+    return createErrorResponse('Admin access required', 403);
+  }
+
+  try {
+    const body = await req.json() as { jobId?: string; processNext?: boolean };
+    const { jobId, processNext } = body;
+
+    // Start background processing (fire and forget)
+    // The function will continue running after we return the response
+    void processExtraction(jobId, processNext);
+
+    // Return 202 Accepted immediately - processing continues in background
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: 'Extraction started in background',
+        jobId: jobId || 'next-queued'
+      }),
+      { 
+        status: 202, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+  } catch (error) {
+    console.error('Error in extraction-worker-background:', error);
     return createErrorResponse('Internal server error', 500);
   }
 }

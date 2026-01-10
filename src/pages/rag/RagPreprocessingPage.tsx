@@ -103,20 +103,33 @@ export default function RagPreprocessingPage(): React.ReactElement {
       const triggerData = (await triggerResponse.json()) as { success: boolean; jobsCreated?: number; error?: string };
       if (!triggerData.success) {
         setError(triggerData.error || 'Failed to trigger extraction');
+        setProcessingAll(false);
         return;
       }
-      if (triggerData.jobsCreated && triggerData.jobsCreated > 0) {
-        await fetch('/api/extraction/worker', {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ processNext: true }),
-        });
-      }
+      
+      // Background processing started - poll for updates
       void fetchInventory();
       void fetchStats();
+      
+      // Poll every 5 seconds while processing
+      const pollInterval = setInterval(async () => {
+        await fetchInventory();
+        await fetchStats();
+        const stillProcessing = inventory.some(i => i.status === 'processing');
+        if (!stillProcessing) {
+          clearInterval(pollInterval);
+          setProcessingAll(false);
+        }
+      }, 5000);
+      
+      // Stop polling after 10 minutes max
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setProcessingAll(false);
+      }, 10 * 60 * 1000);
+      
     } catch {
       setError('Failed to process files');
-    } finally {
       setProcessingAll(false);
     }
   };
@@ -133,13 +146,23 @@ export default function RagPreprocessingPage(): React.ReactElement {
         setError(triggerData.error || 'Failed to trigger extraction');
         return;
       }
-      await fetch('/api/extraction/worker', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ processNext: true }),
-      });
+      
+      // Background processing started - refresh after a delay
       void fetchInventory();
       void fetchStats();
+      
+      // Poll for this specific item
+      const pollInterval = setInterval(async () => {
+        await fetchInventory();
+        await fetchStats();
+        const item = inventory.find(i => i.id === blobId);
+        if (item?.status === 'extracted' || item?.status === 'failed') {
+          clearInterval(pollInterval);
+        }
+      }, 3000);
+      
+      setTimeout(() => clearInterval(pollInterval), 5 * 60 * 1000);
+      
     } catch {
       setError('Failed to retry extraction');
     }

@@ -163,24 +163,31 @@ export default function FilesPage(): React.ReactElement {
       const triggerData = (await triggerResponse.json()) as { success: boolean; error?: string };
       if (!triggerData.success) {
         setError(triggerData.error || 'Failed to trigger extraction');
+        setExtractingFileId(null);
         return;
       }
-      const workerResponse = await fetch('/api/extraction/worker', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ processNext: true }),
-      });
-      const workerData = (await workerResponse.json()) as { success: boolean; error?: string };
-      if (!workerData.success) {
-        setError(workerData.error || 'Extraction failed');
-      }
+      
+      // Extraction started in background - poll for completion
       void fetchFiles();
+      
+      // Poll every 3 seconds for up to 5 minutes
+      const pollInterval = setInterval(async () => {
+        await fetchFiles();
+        const updatedFiles = files.find(f => f.id === fileId);
+        if (updatedFiles?.extractionStatus === 'extracted' || updatedFiles?.extractionStatus === 'failed') {
+          clearInterval(pollInterval);
+          setExtractingFileId(null);
+        }
+      }, 3000);
+      
+      // Stop polling after 5 minutes max
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setExtractingFileId(null);
+      }, 5 * 60 * 1000);
+      
     } catch {
       setError('Failed to extract file');
-    } finally {
       setExtractingFileId(null);
     }
   };

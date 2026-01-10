@@ -95,8 +95,24 @@ export default async function handler(req: Request, _context: Context): Promise<
       }
     }
 
+    // Trigger background worker to process the jobs
+    if (jobsCreated > 0) {
+      const workerUrl = new URL(req.url);
+      workerUrl.pathname = '/.netlify/functions/extraction-worker-background';
+      
+      // Fire and forget - don't await, let it run in background
+      fetch(workerUrl.toString(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': req.headers.get('Authorization') || '',
+        },
+        body: JSON.stringify({ processNext: true }),
+      }).catch(err => console.error('Failed to trigger background worker:', err));
+    }
+
     return createSuccessResponse({
-      message: `Created ${jobsCreated} extraction job(s)`,
+      message: `Created ${jobsCreated} extraction job(s) - processing started`,
       correlationId,
       jobsCreated,
     });

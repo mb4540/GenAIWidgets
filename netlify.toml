@@ -108,7 +108,7 @@
 
 [[redirects]]
   from = "/api/extraction/worker"
-  to = "/.netlify/functions/extraction-worker"
+  to = "/.netlify/functions/extraction-worker-background"
   status = 200
 
 # SPA fallback - must be last
