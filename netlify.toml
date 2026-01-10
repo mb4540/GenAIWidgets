@@ -12,8 +12,18 @@
 
 # API routes redirect to functions
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  from = "/api/auth/signup"
+  to = "/.netlify/functions/auth-signup"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/signin"
+  to = "/.netlify/functions/auth-signin"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/me"
+  to = "/.netlify/functions/auth-me"
   status = 200
 
 # SPA fallback - must be last
