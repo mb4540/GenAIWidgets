@@ -22,7 +22,7 @@ interface QAStats {
 interface QAReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  fileId: string;
+  blobId: string;
   fileName: string;
 }
 
@@ -36,7 +36,7 @@ interface QAListResponse {
 export default function QAReviewModal({
   isOpen,
   onClose,
-  fileId,
+  blobId,
   fileName,
 }: QAReviewModalProps): React.ReactElement | null {
   const [qaPairs, setQaPairs] = useState<QAPair[]>([]);
@@ -61,7 +61,7 @@ export default function QAReviewModal({
     setLoading(true);
     try {
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
-      const response = await fetch(`/api/qa/list?fileId=${fileId}${statusParam}`, {
+      const response = await fetch(`/api/qa/list?blobId=${blobId}${statusParam}`, {
         headers: getAuthHeaders(),
       });
       const data = (await response.json()) as QAListResponse;
@@ -76,7 +76,7 @@ export default function QAReviewModal({
     } finally {
       setLoading(false);
     }
-  }, [fileId, statusFilter, getAuthHeaders]);
+  }, [blobId, statusFilter, getAuthHeaders]);
 
   useEffect(() => {
     if (isOpen) {
@@ -214,7 +214,7 @@ export default function QAReviewModal({
       const response = await fetch('/api/qa/bulk-approve', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ fileId, approveAll: true }),
+        body: JSON.stringify({ blobId, approveAll: true }),
       });
       const data = (await response.json()) as { success: boolean; approvedCount?: number; error?: string };
       if (data.success) {

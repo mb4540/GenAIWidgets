@@ -373,7 +373,7 @@ export default function RagPreprocessingPage(): React.ReactElement {
             setQaReviewOpen(false);
             setQaReviewItem(null);
           }}
-          fileId={qaReviewItem.id}
+          blobId={qaReviewItem.id}
           fileName={qaReviewItem.fileName}
         />
       )}
