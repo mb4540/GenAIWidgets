@@ -54,13 +54,31 @@ export default async function handler(req: Request, _context: Context): Promise<
 
   const sql = neon(DATABASE_URL);
   const url = new URL(req.url);
-  const blobId = url.searchParams.get('blobId');
+  const blobIdParam = url.searchParams.get('blobId');
+  const fileIdParam = url.searchParams.get('fileId');
 
-  if (!blobId) {
-    return createErrorResponse('blobId parameter is required', 400);
+  if (!blobIdParam && !fileIdParam) {
+    return createErrorResponse('blobId or fileId parameter is required', 400);
   }
 
   try {
+    let blobId = blobIdParam;
+
+    // If fileId is provided, look up the blob_id via the files table
+    if (fileIdParam && !blobId) {
+      const fileResult = await sql`
+        SELECT bi.blob_id
+        FROM files f
+        JOIN blob_inventory bi ON f.blob_key = bi.blob_key
+        WHERE f.file_id = ${fileIdParam}
+      ` as { blob_id: string }[];
+
+      if (!fileResult[0]) {
+        return createErrorResponse('No extraction output found for this blob', 404);
+      }
+      blobId = fileResult[0].blob_id;
+    }
+
     // Get the latest extraction output for this blob
     const outputs = await sql`
       SELECT eo.* 

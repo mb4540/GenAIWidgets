@@ -257,7 +257,7 @@ export default function FilesPage(): React.ReactElement {
     
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/extraction/content?blobId=${fileId}`, {
+      const response = await fetch(`/api/extraction/content?fileId=${fileId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json() as { success: boolean; content?: ExtractedContent; error?: string };
