@@ -12,6 +12,7 @@ interface InventoryItem {
   status: string;
   discoveredAt: string;
   updatedAt: string;
+  chunkCount?: number | null;
 }
 
 interface RagInventoryRowProps {

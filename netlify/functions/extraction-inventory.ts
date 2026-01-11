@@ -15,6 +15,7 @@ interface BlobInventoryRow {
   extraction_priority: number;
   discovered_at: string;
   updated_at: string;
+  chunk_count: number | null;
 }
 
 interface LineageRow {
@@ -88,29 +89,45 @@ export default async function handler(req: Request, _context: Context): Promise<
 
       if (status && tenantId) {
         inventory = await sql`
-          SELECT * FROM blob_inventory
-          WHERE status = ${status} AND tenant_id = ${tenantId}
-          ORDER BY discovered_at DESC
+          SELECT bi.*, 
+            (SELECT ej.chunk_count FROM extraction_jobs ej 
+             WHERE ej.blob_id = bi.blob_id AND ej.status = 'completed'
+             ORDER BY ej.completed_at DESC LIMIT 1) AS chunk_count
+          FROM blob_inventory bi
+          WHERE bi.status = ${status} AND bi.tenant_id = ${tenantId}
+          ORDER BY bi.discovered_at DESC
           LIMIT ${limit} OFFSET ${offset}
         ` as BlobInventoryRow[];
       } else if (status) {
         inventory = await sql`
-          SELECT * FROM blob_inventory
-          WHERE status = ${status}
-          ORDER BY discovered_at DESC
+          SELECT bi.*, 
+            (SELECT ej.chunk_count FROM extraction_jobs ej 
+             WHERE ej.blob_id = bi.blob_id AND ej.status = 'completed'
+             ORDER BY ej.completed_at DESC LIMIT 1) AS chunk_count
+          FROM blob_inventory bi
+          WHERE bi.status = ${status}
+          ORDER BY bi.discovered_at DESC
           LIMIT ${limit} OFFSET ${offset}
         ` as BlobInventoryRow[];
       } else if (tenantId) {
         inventory = await sql`
-          SELECT * FROM blob_inventory
-          WHERE tenant_id = ${tenantId}
-          ORDER BY discovered_at DESC
+          SELECT bi.*, 
+            (SELECT ej.chunk_count FROM extraction_jobs ej 
+             WHERE ej.blob_id = bi.blob_id AND ej.status = 'completed'
+             ORDER BY ej.completed_at DESC LIMIT 1) AS chunk_count
+          FROM blob_inventory bi
+          WHERE bi.tenant_id = ${tenantId}
+          ORDER BY bi.discovered_at DESC
           LIMIT ${limit} OFFSET ${offset}
         ` as BlobInventoryRow[];
       } else {
         inventory = await sql`
-          SELECT * FROM blob_inventory
-          ORDER BY discovered_at DESC
+          SELECT bi.*, 
+            (SELECT ej.chunk_count FROM extraction_jobs ej 
+             WHERE ej.blob_id = bi.blob_id AND ej.status = 'completed'
+             ORDER BY ej.completed_at DESC LIMIT 1) AS chunk_count
+          FROM blob_inventory bi
+          ORDER BY bi.discovered_at DESC
           LIMIT ${limit} OFFSET ${offset}
         ` as BlobInventoryRow[];
       }
@@ -133,6 +150,7 @@ export default async function handler(req: Request, _context: Context): Promise<
           extractionPriority: row.extraction_priority,
           discoveredAt: row.discovered_at,
           updatedAt: row.updated_at,
+          chunkCount: row.chunk_count,
         })),
         total: parseInt(countResult[0]?.total || '0', 10),
         limit,

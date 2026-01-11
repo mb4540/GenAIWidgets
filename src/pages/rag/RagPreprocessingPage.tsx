@@ -344,7 +344,7 @@ export default function RagPreprocessingPage(): React.ReactElement {
         }}
         onGenerate={handleGenerateQA}
         fileName={qaGenerateItem?.fileName || ''}
-        chunkCount={6}
+        chunkCount={qaGenerateItem?.chunkCount || 1}
         loading={qaGenerateLoading}
       />
 
