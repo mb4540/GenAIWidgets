@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Users, Building2, UserPlus, MessageSquare } from 'lucide-react';
+import { Users, Building2, UserPlus, MessageSquare, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { adminInfo } from './adminInfo';
 import {
   TenantsTab,
   UsersTab,
@@ -28,6 +30,7 @@ export default function AdminPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
 
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
   const [promptForm, setPromptForm] = useState<PromptFormData>({
     displayName: '',
     description: '',
@@ -305,10 +308,26 @@ export default function AdminPage(): React.ReactElement {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage tenants, users, and memberships</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Manage tenants, users, and memberships</p>
+        </div>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+          title="View technical documentation"
+        >
+          <Info className="h-4 w-4" />
+          <span>Details</span>
+        </button>
       </div>
+
+      <PageInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        content={adminInfo}
+      />
 
       {error && (
         <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4 text-destructive flex justify-between items-center">

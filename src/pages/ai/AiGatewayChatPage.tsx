@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { chatInfo } from './chatInfo';
 import { 
   AVAILABLE_MODELS as SHARED_MODELS, 
   DEFAULT_MODELS as SHARED_DEFAULTS,
@@ -50,6 +52,7 @@ export default function AiGatewayChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModels, setSelectedModels] = useState<Record<Provider, string>>(DEFAULT_MODELS);
+  const [showInfo, setShowInfo] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -106,9 +109,23 @@ export default function AiGatewayChatPage() {
   return (
     <div className="flex h-screen flex-col">
       {/* Header */}
-      <div className="border-b border-border p-4">
+      <div className="border-b border-border p-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">AI Gateway Chat</h1>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+          title="View technical documentation"
+        >
+          <Info className="h-4 w-4" />
+          <span>Details</span>
+        </button>
       </div>
+
+      <PageInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        content={chatInfo}
+      />
 
       {/* Model Selectors */}
       <div className="grid gap-4 border-b border-border p-4 md:grid-cols-3">

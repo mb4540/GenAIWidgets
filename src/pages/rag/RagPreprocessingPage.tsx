@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Layers, RefreshCw, Loader2 } from 'lucide-react';
+import { Layers, RefreshCw, Loader2, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { ragInfo } from './ragInfo';
 import {
   RagStatsCards,
   RagStatusFilter,
@@ -60,6 +62,7 @@ export default function RagPreprocessingPage(): React.ReactElement {
   const [qaGenerateLoading, setQaGenerateLoading] = useState(false);
   const [qaReviewOpen, setQaReviewOpen] = useState(false);
   const [qaReviewItem, setQaReviewItem] = useState<InventoryItem | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -302,21 +305,37 @@ export default function RagPreprocessingPage(): React.ReactElement {
           </h1>
           <p className="text-muted-foreground">Manage extracted files and chunks for retrieval</p>
         </div>
-        {user?.isAdmin && pendingCount > 0 && (
+        <div className="flex items-center gap-2">
+          {user?.isAdmin && pendingCount > 0 && (
+            <button
+              onClick={() => void handleProcessAll()}
+              disabled={processingAll}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+            >
+              {processingAll ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Process All Pending ({pendingCount})
+            </button>
+          )}
           <button
-            onClick={() => void handleProcessAll()}
-            disabled={processingAll}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+            onClick={() => setShowInfo(true)}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            title="View technical documentation"
           >
-            {processingAll ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Process All Pending ({pendingCount})
+            <Info className="h-4 w-4" />
+            <span>Details</span>
           </button>
-        )}
+        </div>
       </div>
+
+      <PageInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        content={ragInfo}
+      />
 
       {error && (
         <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4 text-destructive flex justify-between items-center">

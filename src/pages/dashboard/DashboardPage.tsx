@@ -10,8 +10,11 @@ import {
   AlertCircle, 
   Loader2,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Info
 } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { dashboardInfo } from './dashboardInfo';
 
 interface FileStats {
   totalFiles: number;
@@ -53,6 +56,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -121,10 +125,26 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <LayoutDashboard className="h-6 w-6" />
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <LayoutDashboard className="h-6 w-6" />
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        </div>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+          title="View technical documentation"
+        >
+          <Info className="h-4 w-4" />
+          <span>Details</span>
+        </button>
       </div>
+
+      <PageInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        content={dashboardInfo}
+      />
 
       {/* Welcome Card */}
       <div className="rounded-lg border border-border bg-card p-4">

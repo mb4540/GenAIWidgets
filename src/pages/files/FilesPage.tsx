@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Folder, File, Upload, FolderPlus } from 'lucide-react';
+import { Folder, File, Upload, FolderPlus, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { filesInfo } from './filesInfo';
 import FileViewerModal from '@/components/files/FileViewerModal';
 import { ExtractionPreviewModal, type ExtractedContent } from '../rag/components';
 import {
@@ -57,6 +59,7 @@ export default function FilesPage(): React.ReactElement {
   const [extractedContent, setExtractedContent] = useState<ExtractedContent | null>(null);
   const [loadingChunks, setLoadingChunks] = useState(false);
   const [showAllTenants, setShowAllTenants] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const fetchFiles = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -282,29 +285,45 @@ export default function FilesPage(): React.ReactElement {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">File Storage</h1>
-        <p className="text-muted-foreground">
-          Manage your files and folders
-          {user?.isAdmin && (
-            <button
-              onClick={() => setShowAllTenants(!showAllTenants)}
-              className={`ml-2 text-xs px-2 py-0.5 rounded transition-colors ${
-                showAllTenants 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-primary/10 text-primary hover:bg-primary/20'
-              }`}
-            >
-              {showAllTenants ? 'All Tenants' : 'Admin'}
-            </button>
-          )}
-          {totalFileCount > 0 && (
-            <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded">
-              {totalFileCount} {totalFileCount === 1 ? 'file' : 'files'} total
-            </span>
-          )}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">File Storage</h1>
+          <p className="text-muted-foreground">
+            Manage your files and folders
+            {user?.isAdmin && (
+              <button
+                onClick={() => setShowAllTenants(!showAllTenants)}
+                className={`ml-2 text-xs px-2 py-0.5 rounded transition-colors ${
+                  showAllTenants 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-primary/10 text-primary hover:bg-primary/20'
+                }`}
+              >
+                {showAllTenants ? 'All Tenants' : 'Admin'}
+              </button>
+            )}
+            {totalFileCount > 0 && (
+              <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded">
+                {totalFileCount} {totalFileCount === 1 ? 'file' : 'files'} total
+              </span>
+            )}
+          </p>
+        </div>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+          title="View technical documentation"
+        >
+          <Info className="h-4 w-4" />
+          <span>Details</span>
+        </button>
       </div>
+
+      <PageInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        content={filesInfo}
+      />
 
       <div className="flex justify-between items-center">
         <FilesBreadcrumb currentPath={currentPath} onNavigate={setCurrentPath} />
