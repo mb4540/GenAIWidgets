@@ -282,30 +282,32 @@ export default function FilesPage(): React.ReactElement {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">File Storage</h1>
-          <p className="text-muted-foreground">
-            Manage your files and folders
-            {user?.isAdmin && (
-              <button
-                onClick={() => setShowAllTenants(!showAllTenants)}
-                className={`ml-2 text-xs px-2 py-0.5 rounded transition-colors ${
-                  showAllTenants 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-primary/10 text-primary hover:bg-primary/20'
-                }`}
-              >
-                {showAllTenants ? 'All Tenants' : 'Admin'}
-              </button>
-            )}
-            {totalFileCount > 0 && (
-              <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded">
-                {totalFileCount} {totalFileCount === 1 ? 'file' : 'files'} total
-              </span>
-            )}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">File Storage</h1>
+        <p className="text-muted-foreground">
+          Manage your files and folders
+          {user?.isAdmin && (
+            <button
+              onClick={() => setShowAllTenants(!showAllTenants)}
+              className={`ml-2 text-xs px-2 py-0.5 rounded transition-colors ${
+                showAllTenants 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+              }`}
+            >
+              {showAllTenants ? 'All Tenants' : 'Admin'}
+            </button>
+          )}
+          {totalFileCount > 0 && (
+            <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded">
+              {totalFileCount} {totalFileCount === 1 ? 'file' : 'files'} total
+            </span>
+          )}
+        </p>
+      </div>
+
+      <div className="flex justify-between items-center">
+        <FilesBreadcrumb currentPath={currentPath} onNavigate={setCurrentPath} />
         <div className="flex gap-2">
           <label className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-primary/90">
             <Upload className="h-4 w-4" />
@@ -321,8 +323,6 @@ export default function FilesPage(): React.ReactElement {
           </button>
         </div>
       </div>
-
-      <FilesBreadcrumb currentPath={currentPath} onNavigate={setCurrentPath} />
 
       {error && (
         <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4 text-destructive flex justify-between items-center">
