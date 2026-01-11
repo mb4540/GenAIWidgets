@@ -88,41 +88,45 @@ export default function RagInventoryRow({
         {new Date(item.discoveredAt).toLocaleDateString()}
       </td>
       <td className="px-4 py-3 text-right">
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-2">
           {item.status === 'extracted' && onViewContent && (
             <button
               onClick={() => onViewContent(item)}
-              className="p-2 text-muted-foreground hover:text-primary"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-primary hover:bg-muted rounded"
               title="View extracted content"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-3.5 w-3.5" />
+              <span>View</span>
             </button>
           )}
           {item.status === 'extracted' && onGenerateQA && (
             <button
               onClick={() => onGenerateQA(item)}
-              className="p-2 text-muted-foreground hover:text-primary"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-primary hover:bg-muted rounded"
               title="Generate Q&A pairs"
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Generate</span>
             </button>
           )}
           {item.status === 'extracted' && onReviewQA && (
             <button
               onClick={() => onReviewQA(item)}
-              className="p-2 text-muted-foreground hover:text-primary"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-primary hover:bg-muted rounded"
               title="Review Q&A pairs"
             >
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Review</span>
             </button>
           )}
           {(item.status === 'failed' || item.status === 'pending') && (
             <button
               onClick={() => onRetry(item.id)}
-              className="p-2 text-muted-foreground hover:text-primary"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-primary hover:bg-muted rounded"
               title={item.status === 'failed' ? 'Retry' : 'Extract'}
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>{item.status === 'failed' ? 'Retry' : 'Extract'}</span>
             </button>
           )}
         </div>
