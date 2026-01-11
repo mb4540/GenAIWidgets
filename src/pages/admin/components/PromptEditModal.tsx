@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Save } from 'lucide-react';
+import ModelSelector from '@/components/common/ModelSelector';
 
 interface Prompt {
   id: string;
@@ -85,29 +86,12 @@ export default function PromptEditModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Model Provider</label>
-              <select
-                value={formData.modelProvider}
-                onChange={(e) => onFormChange({ ...formData, modelProvider: e.target.value })}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="google">Google</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="openai">OpenAI</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Model Name</label>
-              <input
-                type="text"
-                value={formData.modelName}
-                onChange={(e) => onFormChange({ ...formData, modelName: e.target.value })}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
+          <ModelSelector
+            provider={formData.modelProvider}
+            model={formData.modelName}
+            onProviderChange={(provider) => onFormChange({ ...formData, modelProvider: provider })}
+            onModelChange={(model) => onFormChange({ ...formData, modelName: model })}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div>

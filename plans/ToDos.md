@@ -21,8 +21,8 @@
 
 ## Admin Prompts - Edit Prompt Modal
 
-- [ ] Change Model Name from text field to dropdown (like AI Gateway Chat page)
-- [ ] Create a common/reusable model selector component that can be shared between Edit Prompt modal and AI Gateway Chat page
+- [x] Change Model Name from text field to dropdown (like AI Gateway Chat page)
+- [x] Create a common/reusable model selector component that can be shared between Edit Prompt modal and AI Gateway Chat page
 
 ## RAG Preprocessing
 

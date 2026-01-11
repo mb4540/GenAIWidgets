@@ -1,5 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Send, Loader2 } from 'lucide-react';
+import { 
+  AVAILABLE_MODELS as SHARED_MODELS, 
+  DEFAULT_MODELS as SHARED_DEFAULTS,
+  PROVIDER_LABELS as SHARED_LABELS,
+} from '@/components/common/ModelSelector';
 
 type Provider = 'openai' | 'anthropic' | 'gemini';
 
@@ -17,9 +22,9 @@ interface ChatMessage {
 }
 
 const PROVIDER_LABELS: Record<Provider, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
-  gemini: 'Google',
+  openai: SHARED_LABELS.openai,
+  anthropic: SHARED_LABELS.anthropic,
+  gemini: SHARED_LABELS.google,
 };
 
 const PROVIDER_COLORS: Record<Provider, string> = {
@@ -29,40 +34,15 @@ const PROVIDER_COLORS: Record<Provider, string> = {
 };
 
 const AVAILABLE_MODELS: Record<Provider, { id: string; name: string }[]> = {
-  openai: [
-    { id: 'gpt-4o', name: 'GPT-4o' },
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
-    { id: 'gpt-4.1', name: 'GPT-4.1' },
-    { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini' },
-    { id: 'gpt-4.1-nano', name: 'GPT-4.1 Nano' },
-    { id: 'gpt-5', name: 'GPT-5' },
-    { id: 'gpt-5-mini', name: 'GPT-5 Mini' },
-    { id: 'gpt-5-nano', name: 'GPT-5 Nano' },
-    { id: 'o3-mini', name: 'O3 Mini' },
-    { id: 'o4-mini', name: 'O4 Mini' },
-  ],
-  anthropic: [
-    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' },
-    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
-    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet' },
-    { id: 'claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
-    { id: 'claude-haiku-4-5', name: 'Claude Haiku 4.5' },
-    { id: 'claude-opus-4-5', name: 'Claude Opus 4.5' },
-  ],
-  gemini: [
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
-    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite' },
-    { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-    { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite' },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
-    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest' },
-  ],
+  openai: SHARED_MODELS.openai,
+  anthropic: SHARED_MODELS.anthropic,
+  gemini: SHARED_MODELS.google,
 };
 
 const DEFAULT_MODELS: Record<Provider, string> = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-haiku-20240307',
-  gemini: 'gemini-2.0-flash',
+  openai: SHARED_DEFAULTS.openai,
+  anthropic: SHARED_DEFAULTS.anthropic,
+  gemini: SHARED_DEFAULTS.google,
 };
 
 export default function AiGatewayChatPage() {
