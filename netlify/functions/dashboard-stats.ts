@@ -51,17 +51,21 @@ export default async function handler(req: Request, _context: Context): Promise<
 
   try {
     // File stats (tenant-scoped)
-    const fileStatsResult = await sql`
-      SELECT 
-        COUNT(*) FILTER (WHERE is_folder = false) as total_files,
-        COUNT(*) FILTER (WHERE is_folder = true) as total_folders
+    const fileCountResult = await sql`
+      SELECT COUNT(*) as total_files
       FROM files
       WHERE tenant_id = ${context.tenantId}
-    ` as { total_files: string; total_folders: string }[];
+    ` as { total_files: string }[];
+
+    const folderCountResult = await sql`
+      SELECT COUNT(*) as total_folders
+      FROM folders
+      WHERE tenant_id = ${context.tenantId}
+    ` as { total_folders: string }[];
 
     const fileStats: FileStats = {
-      totalFiles: parseInt(fileStatsResult[0]?.total_files || '0', 10),
-      totalFolders: parseInt(fileStatsResult[0]?.total_folders || '0', 10),
+      totalFiles: parseInt(fileCountResult[0]?.total_files || '0', 10),
+      totalFolders: parseInt(folderCountResult[0]?.total_folders || '0', 10),
     };
 
     // Extraction stats (tenant-scoped via blob_inventory)
