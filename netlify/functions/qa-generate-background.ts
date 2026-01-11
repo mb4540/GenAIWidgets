@@ -121,11 +121,14 @@ async function generateQAForChunk(
   };
 
   const baseUrl = GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
-  const url = `${baseUrl}/v1beta/models/${promptConfig.modelName}:generateContent?key=${GEMINI_API_KEY}`;
+  const url = `${baseUrl}/v1beta/models/${promptConfig.modelName}:generateContent`;
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'x-goog-api-key': GEMINI_API_KEY,
+    },
     body: JSON.stringify(requestBody),
   });
 
