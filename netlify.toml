@@ -13,6 +13,9 @@
 [functions."extraction-worker-background"]
   timeout = 60
 
+[functions."qa-generate-background"]
+  timeout = 900
+
 # API routes redirect to functions
 [[redirects]]
   from = "/api/auth/signup"
@@ -117,6 +120,32 @@
 [[redirects]]
   from = "/api/extraction/content"
   to = "/.netlify/functions/extraction-content"
+  status = 200
+
+# Q&A API
+[[redirects]]
+  from = "/api/qa-generate-background"
+  to = "/.netlify/functions/qa-generate-background"
+  status = 200
+
+[[redirects]]
+  from = "/api/qa/list"
+  to = "/.netlify/functions/qa-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/qa/update"
+  to = "/.netlify/functions/qa-update"
+  status = 200
+
+[[redirects]]
+  from = "/api/qa/delete"
+  to = "/.netlify/functions/qa-delete"
+  status = 200
+
+[[redirects]]
+  from = "/api/qa/bulk-approve"
+  to = "/.netlify/functions/qa-bulk-approve"
   status = 200
 
 # SPA fallback - must be last
