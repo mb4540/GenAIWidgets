@@ -167,7 +167,8 @@ export default async function handler(req: Request, _context: Context): Promise<
       recentActivity,
     });
   } catch (error) {
-    console.error('Dashboard stats error:', error);
-    return createErrorResponse('Failed to fetch dashboard stats', 500);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Dashboard stats error:', errorMessage, error);
+    return createErrorResponse(`Failed to fetch dashboard stats: ${errorMessage}`, 500);
   }
 }
