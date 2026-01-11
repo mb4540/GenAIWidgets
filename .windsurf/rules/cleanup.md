@@ -206,6 +206,11 @@ After cleanup:
 - Standardize documentation format
 
 ---
+### Protected Files (Never Move or Delete)
+
+- [/db_ref.md](cci:7://file:///Users/michaelberry/Documents/CascadeProjects/GenAIWidgets/db_ref.md:0:0-0:0) - Database schema reference, required at project root by database-design.md rule
+
+---
 
 ## Prohibited Practices
 

@@ -197,10 +197,9 @@ export default function RagPreprocessingPage(): React.ReactElement {
     }
   };
 
-  const handleAcceptContent = (content: string): void => {
+  const handleAcceptContent = (_content: string): void => {
     // For now, just close the modal
     // In the future, this could save edited content back
-    console.log('Accepted content:', content.length, 'chars');
     setPreviewOpen(false);
     setPreviewContent(null);
   };
