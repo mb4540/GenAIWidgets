@@ -307,7 +307,14 @@ export default async function handler(req: Request, _context: Context): Promise<
           WHERE job_id = ${jobId}
         `;
       } catch (chunkError) {
-        console.error(`Error processing chunk ${i + 1}:`, chunkError);
+        const chunkErrorMsg = chunkError instanceof Error ? chunkError.message : 'Unknown chunk error';
+        console.error(`Error processing chunk ${i + 1}:`, chunkErrorMsg, chunkError);
+        // Store error in job record
+        await sql`
+          UPDATE qa_generation_jobs 
+          SET error_message = ${`Chunk ${i + 1}: ${chunkErrorMsg}`}
+          WHERE job_id = ${jobId}
+        `;
       }
     }
 
