@@ -35,13 +35,12 @@
 
 ## Dashboard Page
 
-- [ ] Update Dashboard with relevant stats based on current system state:
+- [x] Update Dashboard with relevant stats based on current system state:
   - Total files uploaded (tenant-scoped)
   - Extraction status summary (pending/processing/extracted/failed counts)
   - Total chunks extracted
   - Recent extraction activity
   - Q&A pairs generated (pending review/approved counts)
-  - Token usage overview (if tracked)
 
 ## Test Coverage
 
