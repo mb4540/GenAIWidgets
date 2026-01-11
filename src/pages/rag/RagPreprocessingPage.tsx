@@ -245,6 +245,26 @@ export default function RagPreprocessingPage(): React.ReactElement {
           }
         }
         setQaGenerateOpen(false);
+        
+        // Poll for Q&A pairs until they appear (background function is async)
+        const blobId = qaGenerateItem.id;
+        let attempts = 0;
+        const maxAttempts = 30; // 30 seconds max
+        
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+          
+          const listResponse = await fetch(`/api/qa/list?blobId=${blobId}`, {
+            headers: getAuthHeaders(),
+          });
+          const listData = (await listResponse.json()) as { success: boolean; stats?: { total: number } };
+          
+          if (listData.success && listData.stats && listData.stats.total > 0) {
+            break;
+          }
+        }
+        
         setQaGenerateItem(null);
         // Open review modal after generation
         setQaReviewItem(qaGenerateItem);
