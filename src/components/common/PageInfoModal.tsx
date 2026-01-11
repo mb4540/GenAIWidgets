@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Info, Database, Server, FileCode } from 'lucide-react';
+import { X, Info, Database, FileCode } from 'lucide-react';
 
 interface APIEndpoint {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -19,7 +19,7 @@ interface TableInfo {
 interface PageInfoContent {
   title: string;
   overview: string;
-  architecture: string;
+  architecture?: string;
   tables: TableInfo[];
   apis: APIEndpoint[];
 }
@@ -75,17 +75,6 @@ export default function PageInfoModal({
             </h3>
             <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line">
               {content.overview}
-            </div>
-          </section>
-
-          {/* Architecture */}
-          <section>
-            <h3 className="text-xl font-semibold mb-3 flex items-center gap-2">
-              <Server className="h-5 w-5 text-primary" />
-              Architecture
-            </h3>
-            <div className="bg-muted/30 rounded-lg p-4 text-sm leading-relaxed whitespace-pre-line font-mono">
-              {content.architecture}
             </div>
           </section>
 
