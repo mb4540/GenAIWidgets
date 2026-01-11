@@ -6,6 +6,7 @@ interface ExtractionStatusProps {
   chunkCount: number | null | undefined;
   isExtracting: boolean;
   onExtract: () => void;
+  onViewChunks?: () => void;
 }
 
 export default function ExtractionStatus({
@@ -13,6 +14,7 @@ export default function ExtractionStatus({
   chunkCount,
   isExtracting,
   onExtract,
+  onViewChunks,
 }: ExtractionStatusProps): React.ReactElement {
   if (isExtracting) {
     return (
@@ -24,13 +26,14 @@ export default function ExtractionStatus({
 
   if (status === 'extracted') {
     return (
-      <span 
-        className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 bg-green-50 rounded" 
-        title={`${chunkCount || 0} chunks extracted`}
+      <button
+        onClick={onViewChunks}
+        className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 bg-green-50 rounded hover:bg-green-100 transition-colors" 
+        title={`${chunkCount || 0} chunks extracted - click to view`}
       >
         <Check className="h-3 w-3" />
-        {chunkCount || 0}
-      </span>
+        {chunkCount || 0} chunks
+      </button>
     );
   }
 

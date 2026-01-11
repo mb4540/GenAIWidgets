@@ -19,7 +19,7 @@ interface ChatMessage {
 const PROVIDER_LABELS: Record<Provider, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
-  gemini: 'Gemini',
+  gemini: 'Google',
 };
 
 const PROVIDER_COLORS: Record<Provider, string> = {

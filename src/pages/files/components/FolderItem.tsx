@@ -6,6 +6,7 @@ interface FolderItemData {
   name: string;
   path: string;
   createdAt: string;
+  fileCount?: number;
 }
 
 interface FolderItemProps {
@@ -26,7 +27,14 @@ export default function FolderItem({
         className="flex items-center gap-3 flex-1 text-left"
       >
         <Folder className="h-5 w-5 text-blue-500" />
-        <span className="font-medium">{folder.name}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{folder.name}</span>
+          {folder.fileCount !== undefined && folder.fileCount > 0 && (
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              {folder.fileCount} {folder.fileCount === 1 ? 'file' : 'files'}
+            </span>
+          )}
+        </div>
       </button>
       <button
         onClick={() => onDelete(folder.id)}

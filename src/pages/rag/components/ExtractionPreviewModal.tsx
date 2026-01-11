@@ -15,10 +15,11 @@ interface ExtractedContent {
 interface ExtractionPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAccept: (content: string) => void;
+  onAccept?: (content: string) => void;
   extractedContent: ExtractedContent | null;
   fileName: string;
   warning?: string;
+  loading?: boolean;
 }
 
 function formatExtractedContent(content: ExtractedContent): string {
@@ -52,6 +53,7 @@ export default function ExtractionPreviewModal({
   extractedContent,
   fileName,
   warning,
+  loading,
 }: ExtractionPreviewModalProps): React.ReactElement | null {
   const [editedText, setEditedText] = useState('');
 
@@ -61,7 +63,24 @@ export default function ExtractionPreviewModal({
     }
   }, [extractedContent]);
 
-  if (!isOpen || !extractedContent) return null;
+  if (!isOpen) return null;
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div className="relative bg-card border border-border rounded-lg shadow-xl p-8">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span>Loading extracted content...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!extractedContent) return null;
 
   const pageCount = extractedContent.pages?.length || 1;
   const charCount = editedText.length;
@@ -151,15 +170,17 @@ export default function ExtractionPreviewModal({
             onClick={onClose}
             className="px-4 py-2 text-sm border border-border rounded-md hover:bg-muted"
           >
-            Cancel
+            {onAccept ? 'Cancel' : 'Close'}
           </button>
-          <button
-            onClick={() => onAccept(editedText)}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            <Check className="h-4 w-4" />
-            Accept & Save
-          </button>
+          {onAccept && (
+            <button
+              onClick={() => onAccept(editedText)}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              <Check className="h-4 w-4" />
+              Accept & Save
+            </button>
+          )}
         </div>
       </div>
     </div>

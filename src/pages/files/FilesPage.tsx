@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Folder, File, Upload, FolderPlus } from 'lucide-react';
 import FileViewerModal from '@/components/files/FileViewerModal';
+import { ExtractionPreviewModal, type ExtractedContent } from '../rag/components';
 import {
   FilesBreadcrumb,
   FileItem,
@@ -15,6 +16,7 @@ interface FilesResponse {
   success: boolean;
   path: string;
   tenantId: string;
+  totalFileCount: number;
   files: FileItemData[];
   folders: FolderItemData[];
   error?: string;
@@ -46,23 +48,32 @@ export default function FilesPage(): React.ReactElement {
   const [folders, setFolders] = useState<FolderItemData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalFileCount, setTotalFileCount] = useState(0);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [viewingFile, setViewingFile] = useState<FileItemData | null>(null);
   const [extractingFileId, setExtractingFileId] = useState<string | null>(null);
+  const [viewingChunksFile, setViewingChunksFile] = useState<FileItemData | null>(null);
+  const [extractedContent, setExtractedContent] = useState<ExtractedContent | null>(null);
+  const [loadingChunks, setLoadingChunks] = useState(false);
+  const [showAllTenants, setShowAllTenants] = useState(false);
 
   const fetchFiles = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`/api/files/list?path=${encodeURIComponent(currentPath)}`, {
+      const url = showAllTenants 
+        ? `/api/files/list?allTenants=true`
+        : `/api/files/list?path=${encodeURIComponent(currentPath)}`;
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await response.json()) as FilesResponse;
       if (data.success) {
         setFiles(data.files);
         setFolders(data.folders);
+        setTotalFileCount(data.totalFileCount || 0);
       } else {
         setError(data.error || 'Failed to load files');
       }
@@ -71,7 +82,7 @@ export default function FilesPage(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [currentPath]);
+  }, [currentPath, showAllTenants]);
 
   useEffect(() => {
     void fetchFiles();
@@ -236,6 +247,39 @@ export default function FilesPage(): React.ReactElement {
     setCurrentPath(parts.length > 0 ? '/' + parts.join('/') : '/');
   };
 
+  const handleViewChunks = async (fileId: string): Promise<void> => {
+    const file = files.find(f => f.id === fileId);
+    if (!file) return;
+    
+    setViewingChunksFile(file);
+    setLoadingChunks(true);
+    setExtractedContent(null);
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/extraction/content?blobId=${fileId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json() as { success: boolean; content?: ExtractedContent; error?: string };
+      if (data.success && data.content) {
+        setExtractedContent(data.content);
+      } else {
+        setError(data.error || 'Failed to load extracted content');
+        setViewingChunksFile(null);
+      }
+    } catch {
+      setError('Failed to load extracted content');
+      setViewingChunksFile(null);
+    } finally {
+      setLoadingChunks(false);
+    }
+  };
+
+  const handleCloseChunksModal = (): void => {
+    setViewingChunksFile(null);
+    setExtractedContent(null);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-start">
@@ -243,7 +287,23 @@ export default function FilesPage(): React.ReactElement {
           <h1 className="text-2xl font-bold text-foreground">File Storage</h1>
           <p className="text-muted-foreground">
             Manage your files and folders
-            {user?.isAdmin && <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Admin</span>}
+            {user?.isAdmin && (
+              <button
+                onClick={() => setShowAllTenants(!showAllTenants)}
+                className={`ml-2 text-xs px-2 py-0.5 rounded transition-colors ${
+                  showAllTenants 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-primary/10 text-primary hover:bg-primary/20'
+                }`}
+              >
+                {showAllTenants ? 'All Tenants' : 'Admin'}
+              </button>
+            )}
+            {totalFileCount > 0 && (
+              <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded">
+                {totalFileCount} {totalFileCount === 1 ? 'file' : 'files'} total
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -310,8 +370,10 @@ export default function FilesPage(): React.ReactElement {
               onDownload={handleDownload}
               onDelete={(id) => void handleDeleteFile(id)}
               onExtract={(id) => void handleExtract(id)}
+              onViewChunks={(id) => void handleViewChunks(id)}
               getFileIcon={getFileIcon}
               formatFileSize={formatFileSize}
+              showTenantInfo={showAllTenants}
             />
           ))}
 
@@ -329,6 +391,14 @@ export default function FilesPage(): React.ReactElement {
         file={viewingFile}
         isOpen={viewingFile !== null}
         onClose={() => setViewingFile(null)}
+      />
+
+      <ExtractionPreviewModal
+        isOpen={viewingChunksFile !== null}
+        onClose={handleCloseChunksModal}
+        extractedContent={extractedContent}
+        fileName={viewingChunksFile?.name || ''}
+        loading={loadingChunks}
       />
     </div>
   );

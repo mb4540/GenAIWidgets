@@ -2,17 +2,17 @@
 
 ## UI Changes
 
-- [ ] Change "Gemini" header above the dropdown to "Google" on the AI Gateway Chat page
+- [x] Change "Gemini" header above the dropdown to "Google" on the AI Gateway Chat page
 
 ## File Storage Page
 
-- [ ] Add a label to the green check + number indicator (shows number of chunks extracted from document)
-- [ ] Add ability to view the extracted chunks for a document
-- [ ] Show document count per folder
-- [ ] Show total document count
-- [ ] Ensure counts are tenant-sensitive (users see only their tenant's files)
-- [ ] Admin view: ability to see ALL blob storage files across all tenants
-- [ ] Admin view: show which tenant each file belongs to
+- [x] Add a label to the green check + number indicator (shows number of chunks extracted from document)
+- [x] Add ability to view the extracted chunks for a document
+- [x] Show document count per folder
+- [x] Show total document count
+- [x] Ensure counts are tenant-sensitive (users see only their tenant's files)
+- [x] Admin view: ability to see ALL blob storage files across all tenants
+- [x] Admin view: show which tenant each file belongs to
 
 ## File Viewer
 
