@@ -231,15 +231,32 @@ export default function RagPreprocessingPage(): React.ReactElement {
           questionsPerChunk,
         }),
       });
-      const data = (await response.json()) as { success: boolean; totalQAGenerated?: number; error?: string };
-      if (data.success) {
+      
+      // Background functions return 202 Accepted with empty body
+      // or 200 with JSON response when complete
+      if (response.status === 202 || response.ok) {
+        // Try to parse JSON if available
+        const text = await response.text();
+        if (text) {
+          const data = JSON.parse(text) as { success: boolean; error?: string };
+          if (!data.success) {
+            setError(data.error || 'Failed to generate Q&A pairs');
+            return;
+          }
+        }
         setQaGenerateOpen(false);
         setQaGenerateItem(null);
         // Open review modal after generation
         setQaReviewItem(qaGenerateItem);
         setQaReviewOpen(true);
       } else {
-        setError(data.error || 'Failed to generate Q&A pairs');
+        const text = await response.text();
+        try {
+          const data = JSON.parse(text) as { error?: string };
+          setError(data.error || 'Failed to generate Q&A pairs');
+        } catch {
+          setError('Failed to generate Q&A pairs');
+        }
       }
     } catch {
       setError('Failed to generate Q&A pairs');
