@@ -244,6 +244,12 @@ export default async function handler(req: Request, _context: Context): Promise<
       .filter((line: string) => line.trim())
       .map((line: string) => JSON.parse(line) as ChunkRecord);
 
+    console.log(`Parsed ${chunks.length} chunks from JSONL content`);
+
+    if (chunks.length === 0) {
+      return createErrorResponse('No chunks found in extraction output', 400);
+    }
+
     // Create Q&A generation job
     const jobResult = await sql`
       INSERT INTO qa_generation_jobs (blob_id, tenant_id, questions_per_chunk, total_chunks, status, created_by)
@@ -267,13 +273,20 @@ export default async function handler(req: Request, _context: Context): Promise<
     const promptConfig = await getPromptConfig('generate_chunk_qa');
     const documentTitle = chunks[0]?.content?.title || 'Unknown Document';
 
+    console.log(`Starting Q&A generation for ${chunks.length} chunks, job ${jobId}`);
+
     let totalQAGenerated = 0;
     let processedChunks = 0;
 
     // Process each chunk
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      if (!chunk) continue;
+      if (!chunk) {
+        console.log(`Chunk ${i} is null/undefined, skipping`);
+        continue;
+      }
+
+      console.log(`Processing chunk ${i + 1}/${chunks.length}`);
 
       try {
         const qaPairs = await generateQAForChunk(
