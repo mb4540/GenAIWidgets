@@ -113,51 +113,29 @@ export default async function handler(req: Request, _context: Context): Promise<
     const title = chunks[0]?.content?.title || null;
     const language = chunks[0]?.content?.language || 'en';
     
-    // Group chunks by page
-    const pageMap = new Map<number, { text: string; headings: string[] }>();
-    
-    for (const chunk of chunks) {
-      const pageNum = chunk.provenance?.pageStart || 1;
-      const existing = pageMap.get(pageNum) || { text: '', headings: [] };
-      existing.text += (existing.text ? ' ' : '') + chunk.content.chunkText;
-      if (chunk.provenance?.sectionPath?.length) {
-        for (const heading of chunk.provenance.sectionPath) {
-          if (!existing.headings.includes(heading)) {
-            existing.headings.push(heading);
-          }
-        }
-      }
-      pageMap.set(pageNum, existing);
-    }
+    // Build individual chunks array with metadata
+    const individualChunks = chunks.map((chunk, index) => ({
+      index: index + 1,
+      text: chunk.content.chunkText,
+      pageStart: chunk.provenance?.pageStart || null,
+      pageEnd: chunk.provenance?.pageEnd || null,
+      sectionPath: chunk.provenance?.sectionPath || [],
+    }));
 
-    // Convert to pages array
-    const pages = Array.from(pageMap.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([pageNumber, data]) => ({
-        pageNumber,
-        text: data.text,
-        headings: data.headings,
-      }));
-
-    // If all chunks are on page 1 (or null), return as fullText instead
-    const extractedContent = pages.length === 1 && pages[0]?.pageNumber === 1
-      ? {
-          title,
-          language,
-          fullText: pages[0].text,
-        }
-      : {
-          title,
-          language,
-          pages,
-        };
+    // Also build merged fullText for backward compatibility
+    const fullText = chunks.map(c => c.content.chunkText).join('\n\n');
 
     return createSuccessResponse({
       blobId,
       outputId: output.output_id,
       chunkCount: output.chunk_count,
       extractedAt: output.created_at,
-      content: extractedContent,
+      content: {
+        title,
+        language,
+        fullText,
+        chunks: individualChunks,
+      },
     });
   } catch (error) {
     console.error('Error fetching extraction content:', error);

@@ -13,6 +13,7 @@
 - [x] Ensure counts are tenant-sensitive (users see only their tenant's files)
 - [x] Admin view: ability to see ALL blob storage files across all tenants
 - [x] Admin view: show which tenant each file belongs to
+- [x] Improve chunk viewer modal to show individual chunks with boundaries (currently shows merged text)
 
 ## File Viewer
 
@@ -26,7 +27,21 @@
 
 ## RAG Preprocessing
 
-- [ ] Add truth set Q&A generator for RAG Preprocessing
+- [x] Add truth set Q&A generator for RAG Preprocessing (core implementation complete)
+  - Database tables and migration created
+  - Backend APIs: qa-generate, qa-list, qa-update, qa-delete, qa-bulk-approve
+  - Frontend: QAGenerateModal, QAReviewModal integrated into RAG Preprocessing page
+  - Remaining: Run migration, vectorization integration, polish
+
+## Dashboard Page
+
+- [ ] Update Dashboard with relevant stats based on current system state:
+  - Total files uploaded (tenant-scoped)
+  - Extraction status summary (pending/processing/extracted/failed counts)
+  - Total chunks extracted
+  - Recent extraction activity
+  - Q&A pairs generated (pending review/approved counts)
+  - Token usage overview (if tracked)
 
 ## Test Coverage
 

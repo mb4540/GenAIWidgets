@@ -5,6 +5,8 @@ interface RagInventoryTableProps {
   inventory: InventoryItem[];
   onRetry: (blobId: string) => void;
   onViewContent?: (item: InventoryItem) => void;
+  onGenerateQA?: (item: InventoryItem) => void;
+  onReviewQA?: (item: InventoryItem) => void;
   formatFileSize: (bytes: number | null) => string;
 }
 
@@ -12,6 +14,8 @@ export default function RagInventoryTable({
   inventory,
   onRetry,
   onViewContent,
+  onGenerateQA,
+  onReviewQA,
   formatFileSize,
 }: RagInventoryTableProps): React.ReactElement {
   return (
@@ -34,6 +38,8 @@ export default function RagInventoryTable({
               item={item}
               onRetry={onRetry}
               onViewContent={onViewContent}
+              onGenerateQA={onGenerateQA}
+              onReviewQA={onReviewQA}
               formatFileSize={formatFileSize}
             />
           ))}

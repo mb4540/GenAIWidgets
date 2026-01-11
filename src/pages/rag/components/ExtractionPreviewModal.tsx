@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { X, AlertTriangle, Check, FileText } from 'lucide-react';
 
+interface ChunkData {
+  index: number;
+  text: string;
+  pageStart?: number | null;
+  pageEnd?: number | null;
+  sectionPath?: string[];
+}
+
 interface ExtractedContent {
   title?: string;
   language?: string;
@@ -10,6 +18,7 @@ interface ExtractedContent {
     headings?: string[];
   }>;
   fullText?: string;
+  chunks?: ChunkData[];
 }
 
 interface ExtractionPreviewModalProps {
@@ -56,6 +65,7 @@ export default function ExtractionPreviewModal({
   loading,
 }: ExtractionPreviewModalProps): React.ReactElement | null {
   const [editedText, setEditedText] = useState('');
+  const [viewMode, setViewMode] = useState<'chunks' | 'merged'>('chunks');
 
   useEffect(() => {
     if (extractedContent) {
@@ -82,8 +92,9 @@ export default function ExtractionPreviewModal({
   
   if (!extractedContent) return null;
 
-  const pageCount = extractedContent.pages?.length || 1;
+  const chunkCount = extractedContent.chunks?.length || 0;
   const charCount = editedText.length;
+  const hasChunks = extractedContent.chunks && extractedContent.chunks.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -127,8 +138,8 @@ export default function ExtractionPreviewModal({
                 <span className="ml-2 font-medium">{fileName}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">Pages:</span>
-                <span className="ml-2 font-medium">{pageCount}</span>
+                <span className="text-muted-foreground">Chunks:</span>
+                <span className="ml-2 font-medium">{chunkCount}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">Characters:</span>
@@ -143,25 +154,89 @@ export default function ExtractionPreviewModal({
             )}
           </div>
 
-          {/* Editable Content */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Extracted Content
-              <span className="text-muted-foreground font-normal ml-2">
-                (review and edit if needed)
-              </span>
-            </label>
-            <textarea
-              value={editedText}
-              onChange={(e) => setEditedText(e.target.value)}
-              rows={16}
-              className="w-full p-3 border border-border rounded-md bg-background font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <p className="text-xs text-muted-foreground">
-              This content will be chunked and stored for retrieval. 
-              Make any corrections before accepting.
-            </p>
-          </div>
+          {/* View Mode Toggle */}
+          {hasChunks && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">View:</span>
+              <div className="flex rounded-md border border-border overflow-hidden">
+                <button
+                  onClick={() => setViewMode('chunks')}
+                  className={`px-3 py-1 text-sm ${
+                    viewMode === 'chunks'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-muted'
+                  }`}
+                >
+                  Individual Chunks
+                </button>
+                <button
+                  onClick={() => setViewMode('merged')}
+                  className={`px-3 py-1 text-sm ${
+                    viewMode === 'merged'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-muted'
+                  }`}
+                >
+                  Merged Text
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Chunks View */}
+          {hasChunks && viewMode === 'chunks' && (
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+              {extractedContent.chunks!.map((chunk) => (
+                <div
+                  key={chunk.index}
+                  className="border border-border rounded-md overflow-hidden"
+                >
+                  <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border">
+                    <span className="text-sm font-medium">Chunk {chunk.index}</span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {chunk.pageStart && (
+                        <span>
+                          Page {chunk.pageStart}
+                          {chunk.pageEnd && chunk.pageEnd !== chunk.pageStart && `-${chunk.pageEnd}`}
+                        </span>
+                      )}
+                      {chunk.sectionPath && chunk.sectionPath.length > 0 && (
+                        <span className="truncate max-w-[200px]">
+                          {chunk.sectionPath.join(' > ')}
+                        </span>
+                      )}
+                      <span>{chunk.text.length} chars</span>
+                    </div>
+                  </div>
+                  <div className="p-3 text-sm font-mono whitespace-pre-wrap bg-background">
+                    {chunk.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Merged Text View */}
+          {(!hasChunks || viewMode === 'merged') && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Extracted Content
+                <span className="text-muted-foreground font-normal ml-2">
+                  (review and edit if needed)
+                </span>
+              </label>
+              <textarea
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                rows={16}
+                className="w-full p-3 border border-border rounded-md bg-background font-mono text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="text-xs text-muted-foreground">
+                This content will be chunked and stored for retrieval. 
+                Make any corrections before accepting.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

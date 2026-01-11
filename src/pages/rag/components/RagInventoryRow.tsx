@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, RefreshCw, FileText, Clock, Check, X, Loader2 } from 'lucide-react';
+import { Eye, RefreshCw, FileText, Clock, Check, X, Loader2, Sparkles, MessageSquare } from 'lucide-react';
 
 interface InventoryItem {
   id: string;
@@ -18,6 +18,8 @@ interface RagInventoryRowProps {
   item: InventoryItem;
   onRetry: (blobId: string) => void;
   onViewContent?: (item: InventoryItem) => void;
+  onGenerateQA?: (item: InventoryItem) => void;
+  onReviewQA?: (item: InventoryItem) => void;
   formatFileSize: (bytes: number | null) => string;
 }
 
@@ -60,6 +62,8 @@ export default function RagInventoryRow({
   item,
   onRetry,
   onViewContent,
+  onGenerateQA,
+  onReviewQA,
   formatFileSize,
 }: RagInventoryRowProps): React.ReactElement {
   return (
@@ -91,6 +95,24 @@ export default function RagInventoryRow({
               title="View extracted content"
             >
               <Eye className="h-4 w-4" />
+            </button>
+          )}
+          {item.status === 'extracted' && onGenerateQA && (
+            <button
+              onClick={() => onGenerateQA(item)}
+              className="p-2 text-muted-foreground hover:text-primary"
+              title="Generate Q&A pairs"
+            >
+              <Sparkles className="h-4 w-4" />
+            </button>
+          )}
+          {item.status === 'extracted' && onReviewQA && (
+            <button
+              onClick={() => onReviewQA(item)}
+              className="p-2 text-muted-foreground hover:text-primary"
+              title="Review Q&A pairs"
+            >
+              <MessageSquare className="h-4 w-4" />
             </button>
           )}
           {(item.status === 'failed' || item.status === 'pending') && (

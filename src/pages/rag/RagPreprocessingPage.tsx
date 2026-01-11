@@ -6,6 +6,8 @@ import {
   RagStatusFilter,
   RagInventoryTable,
   ExtractionPreviewModal,
+  QAGenerateModal,
+  QAReviewModal,
   type InventoryItem,
   type ExtractedContent,
 } from './components';
@@ -51,6 +53,13 @@ export default function RagPreprocessingPage(): React.ReactElement {
   const [previewContent, setPreviewContent] = useState<ExtractedContent | null>(null);
   const [previewFileName, setPreviewFileName] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Q&A modal state
+  const [qaGenerateOpen, setQaGenerateOpen] = useState(false);
+  const [qaGenerateItem, setQaGenerateItem] = useState<InventoryItem | null>(null);
+  const [qaGenerateLoading, setQaGenerateLoading] = useState(false);
+  const [qaReviewOpen, setQaReviewOpen] = useState(false);
+  const [qaReviewItem, setQaReviewItem] = useState<InventoryItem | null>(null);
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -204,6 +213,46 @@ export default function RagPreprocessingPage(): React.ReactElement {
     setPreviewContent(null);
   };
 
+  const handleOpenGenerateQA = (item: InventoryItem): void => {
+    setQaGenerateItem(item);
+    setQaGenerateOpen(true);
+  };
+
+  const handleGenerateQA = async (questionsPerChunk: number): Promise<void> => {
+    if (!qaGenerateItem) return;
+    
+    setQaGenerateLoading(true);
+    try {
+      const response = await fetch('/api/qa/generate', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          blobId: qaGenerateItem.id,
+          questionsPerChunk,
+        }),
+      });
+      const data = (await response.json()) as { success: boolean; totalQAGenerated?: number; error?: string };
+      if (data.success) {
+        setQaGenerateOpen(false);
+        setQaGenerateItem(null);
+        // Open review modal after generation
+        setQaReviewItem(qaGenerateItem);
+        setQaReviewOpen(true);
+      } else {
+        setError(data.error || 'Failed to generate Q&A pairs');
+      }
+    } catch {
+      setError('Failed to generate Q&A pairs');
+    } finally {
+      setQaGenerateLoading(false);
+    }
+  };
+
+  const handleOpenReviewQA = (item: InventoryItem): void => {
+    setQaReviewItem(item);
+    setQaReviewOpen(true);
+  };
+
   const pendingCount = inventory.filter(i => i.status === 'pending').length;
 
   return (
@@ -258,6 +307,8 @@ export default function RagPreprocessingPage(): React.ReactElement {
           inventory={inventory}
           onRetry={(id) => void handleRetry(id)}
           onViewContent={(item) => void handleViewContent(item)}
+          onGenerateQA={handleOpenGenerateQA}
+          onReviewQA={handleOpenReviewQA}
           formatFileSize={formatFileSize}
         />
       )}
@@ -282,6 +333,32 @@ export default function RagPreprocessingPage(): React.ReactElement {
             <span>Loading extracted content...</span>
           </div>
         </div>
+      )}
+
+      {/* Q&A Generate Modal */}
+      <QAGenerateModal
+        isOpen={qaGenerateOpen}
+        onClose={() => {
+          setQaGenerateOpen(false);
+          setQaGenerateItem(null);
+        }}
+        onGenerate={handleGenerateQA}
+        fileName={qaGenerateItem?.fileName || ''}
+        chunkCount={6}
+        loading={qaGenerateLoading}
+      />
+
+      {/* Q&A Review Modal */}
+      {qaReviewItem && (
+        <QAReviewModal
+          isOpen={qaReviewOpen}
+          onClose={() => {
+            setQaReviewOpen(false);
+            setQaReviewItem(null);
+          }}
+          fileId={qaReviewItem.id}
+          fileName={qaReviewItem.fileName}
+        />
       )}
     </div>
   );
