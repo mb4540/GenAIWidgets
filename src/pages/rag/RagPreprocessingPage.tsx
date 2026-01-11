@@ -223,7 +223,7 @@ export default function RagPreprocessingPage(): React.ReactElement {
     
     setQaGenerateLoading(true);
     try {
-      const response = await fetch('/api/qa/generate', {
+      const response = await fetch('/api/qa-generate-background', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
