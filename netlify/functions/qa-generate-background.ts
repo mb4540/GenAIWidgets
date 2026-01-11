@@ -327,7 +327,8 @@ export default async function handler(req: Request, _context: Context): Promise<
       message: 'Q&A generation completed',
     });
   } catch (error) {
-    console.error('Q&A generation error:', error);
-    return createErrorResponse('Failed to generate Q&A pairs', 500);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Q&A generation error:', errorMessage, error);
+    return createErrorResponse(`Failed to generate Q&A pairs: ${errorMessage}`, 500);
   }
 }
