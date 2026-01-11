@@ -4,12 +4,14 @@ import RagInventoryRow, { type InventoryItem } from './RagInventoryRow';
 interface RagInventoryTableProps {
   inventory: InventoryItem[];
   onRetry: (blobId: string) => void;
+  onViewContent?: (item: InventoryItem) => void;
   formatFileSize: (bytes: number | null) => string;
 }
 
 export default function RagInventoryTable({
   inventory,
   onRetry,
+  onViewContent,
   formatFileSize,
 }: RagInventoryTableProps): React.ReactElement {
   return (
@@ -31,6 +33,7 @@ export default function RagInventoryTable({
               key={item.id}
               item={item}
               onRetry={onRetry}
+              onViewContent={onViewContent}
               formatFileSize={formatFileSize}
             />
           ))}

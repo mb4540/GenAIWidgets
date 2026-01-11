@@ -105,15 +105,23 @@ export default async function handler(req: Request, _context: Context): Promise<
       const workerUrl = new URL(req.url);
       workerUrl.pathname = '/.netlify/functions/extraction-worker-background';
       
-      // Fire and forget - don't await, let it run in background
-      fetch(workerUrl.toString(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': req.headers.get('Authorization') || '',
-        },
-        body: JSON.stringify({ processNext: true }),
-      }).catch(err => console.error('Failed to trigger background worker:', err));
+      console.log(`Triggering worker at: ${workerUrl.toString()}`);
+      
+      // In local dev, fire-and-forget doesn't work well, so we await the initial response
+      // The worker returns 202 immediately and processes in background
+      try {
+        const workerResponse = await fetch(workerUrl.toString(), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || '',
+          },
+          body: JSON.stringify({ processNext: true }),
+        });
+        console.log(`Worker trigger response: ${workerResponse.status}`);
+      } catch (err) {
+        console.error('Failed to trigger background worker:', err);
+      }
     }
 
     return createSuccessResponse({

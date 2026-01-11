@@ -17,6 +17,7 @@ interface InventoryItem {
 interface RagInventoryRowProps {
   item: InventoryItem;
   onRetry: (blobId: string) => void;
+  onViewContent?: (item: InventoryItem) => void;
   formatFileSize: (bytes: number | null) => string;
 }
 
@@ -58,6 +59,7 @@ function getStatusBadge(status: string): React.ReactElement {
 export default function RagInventoryRow({
   item,
   onRetry,
+  onViewContent,
   formatFileSize,
 }: RagInventoryRowProps): React.ReactElement {
   return (
@@ -82,10 +84,11 @@ export default function RagInventoryRow({
       </td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
-          {item.status === 'extracted' && (
+          {item.status === 'extracted' && onViewContent && (
             <button
+              onClick={() => onViewContent(item)}
               className="p-2 text-muted-foreground hover:text-primary"
-              title="View chunks"
+              title="View extracted content"
             >
               <Eye className="h-4 w-4" />
             </button>

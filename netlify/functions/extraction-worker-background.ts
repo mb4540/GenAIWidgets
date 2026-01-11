@@ -4,6 +4,8 @@ import { neon } from '@neondatabase/serverless';
 import { createHash } from 'crypto';
 import { v4 as uuid } from 'uuid';
 import { authenticateRequest, createErrorResponse, createSuccessResponse } from './lib/auth';
+import mammoth from 'mammoth';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 const SOURCE_STORE_NAME = 'user-files';
 const OUTPUT_STORE_NAME = 'extracted-chunks';
@@ -130,6 +132,91 @@ async function getPromptConfig(functionName: string): Promise<PromptConfig> {
   };
 }
 
+/**
+ * Convert Word document to PDF for consistent LLM processing
+ * Pattern from AI-EssayGrader reference implementation
+ */
+async function convertWordToPdf(fileBuffer: Buffer): Promise<Buffer> {
+  const result = await mammoth.extractRawText({ buffer: fileBuffer });
+  const extractedText = result.value;
+
+  if (!extractedText || extractedText.trim().length === 0) {
+    throw new Error('No text could be extracted from the Word document');
+  }
+
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontSize = 11;
+  const margin = 50;
+  const lineHeight = fontSize * 1.2;
+
+  let page = pdfDoc.addPage();
+  const { width, height } = page.getSize();
+  let yPosition = height - margin;
+
+  const maxWidth = width - 2 * margin;
+  const words = extractedText.split(/\s+/);
+  let currentLine = '';
+
+  for (const word of words) {
+    const testLine = currentLine + (currentLine ? ' ' : '') + word;
+    const textWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+    if (textWidth > maxWidth && currentLine) {
+      page.drawText(currentLine, {
+        x: margin,
+        y: yPosition,
+        size: fontSize,
+        font: font,
+        color: rgb(0, 0, 0),
+      });
+      yPosition -= lineHeight;
+      currentLine = word;
+
+      if (yPosition < margin) {
+        page = pdfDoc.addPage();
+        yPosition = height - margin;
+      }
+    } else {
+      currentLine = testLine;
+    }
+  }
+
+  if (currentLine) {
+    page.drawText(currentLine, {
+      x: margin,
+      y: yPosition,
+      size: fontSize,
+      font: font,
+      color: rgb(0, 0, 0),
+    });
+  }
+
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
+}
+
+/**
+ * Determine if file is a Word document based on mime type or extension
+ */
+function isWordDocument(mimeType: string | null, fileName: string): boolean {
+  if (mimeType?.includes('wordprocessingml') || mimeType?.includes('msword')) {
+    return true;
+  }
+  const lowerName = fileName.toLowerCase();
+  return lowerName.endsWith('.docx') || lowerName.endsWith('.doc');
+}
+
+/**
+ * Determine if file is a PDF
+ */
+function isPdfDocument(mimeType: string | null, fileName: string): boolean {
+  if (mimeType?.includes('pdf')) {
+    return true;
+  }
+  return fileName.toLowerCase().endsWith('.pdf');
+}
+
 async function extractWithGemini(
   fileContent: ArrayBuffer,
   fileName: string,
@@ -143,33 +230,58 @@ async function extractWithGemini(
     throw new Error('GEMINI_API_KEY not configured - ensure Netlify AI Gateway is enabled');
   }
 
-  const base64Content = Buffer.from(fileContent).toString('base64');
+  let processedContent: Buffer;
+  let processMimeType: string;
+
+  // Convert Word documents to PDF for consistent processing
+  if (isWordDocument(mimeType, fileName)) {
+    console.log(`Converting Word document to PDF: ${fileName}`);
+    processedContent = await convertWordToPdf(Buffer.from(fileContent));
+    processMimeType = 'application/pdf';
+    console.log(`Word→PDF conversion complete: ${processedContent.length} bytes`);
+  } else if (isPdfDocument(mimeType, fileName)) {
+    processedContent = Buffer.from(fileContent);
+    processMimeType = 'application/pdf';
+  } else {
+    // For other file types, send as-is
+    processedContent = Buffer.from(fileContent);
+    processMimeType = mimeType || 'application/octet-stream';
+  }
+
+  const base64Content = processedContent.toString('base64');
 
   const baseUrl = GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com';
-  const apiUrl = `${baseUrl}/v1beta/models/${promptConfig.modelName}:generateContent?key=${GEMINI_API_KEY}`;
+  const apiUrl = `${baseUrl}/v1beta/models/${promptConfig.modelName}:generateContent`;
+
+  console.log(`Calling Gemini API: model=${promptConfig.modelName}, contentSize=${base64Content.length}`);
+  console.log(`Using base URL: ${baseUrl}`);
 
   const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: promptConfig.userPromptTemplate },
-            {
-              inline_data: {
-                mime_type: mimeType || 'application/octet-stream',
-                data: base64Content,
-              },
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'x-goog-api-key': GEMINI_API_KEY,
+    },
+    body: JSON.stringify({
+      contents: [{
+        role: 'user',
+        parts: [
+          { text: promptConfig.userPromptTemplate },
+          {
+            inline_data: {
+              mime_type: processMimeType,
+              data: base64Content,
             },
-          ],
-        }],
-        generationConfig: {
-          temperature: promptConfig.temperature,
-          maxOutputTokens: promptConfig.maxTokens,
-        },
-      }),
-    }
-  );
+          },
+        ],
+      }],
+      generationConfig: {
+        temperature: promptConfig.temperature,
+        maxOutputTokens: promptConfig.maxTokens,
+        responseMimeType: 'application/json',
+      },
+    }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -183,18 +295,24 @@ async function extractWithGemini(
     throw new Error('No content returned from Gemini');
   }
 
-  const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    return {
-      title: fileName,
-      language: 'en',
-      fullText: textContent,
-    };
-  }
+  console.log(`Gemini response received: ${textContent.length} chars`);
 
+  // Try to parse as JSON first (since we requested JSON mode)
   try {
-    return JSON.parse(jsonMatch[0]) as ExtractedContent;
+    return JSON.parse(textContent) as ExtractedContent;
   } catch {
+    // Fallback: try to extract JSON from response
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[0]) as ExtractedContent;
+      } catch {
+        // Fall through to plain text handling
+      }
+    }
+    
+    // Last resort: treat as plain text
+    console.warn('Could not parse JSON from Gemini response, using as plain text');
     return {
       title: fileName,
       language: 'en',
@@ -340,6 +458,7 @@ async function processExtraction(jobId: string | undefined, processNext: boolean
   }
 
   const sql = neon(DATABASE_URL);
+  let currentJobId: string | undefined;
 
   try {
     let job: ExtractionJobRow | undefined;
@@ -364,7 +483,11 @@ async function processExtraction(jobId: string | undefined, processNext: boolean
       return;
     }
 
+    // Track the job we're processing for error handling
+    currentJobId = job.job_id;
     const startTime = Date.now();
+    console.log(`Starting extraction job: ${currentJobId}`);
+    console.log(`Job details: blob_id=${job.blob_id}, version=${job.extraction_version}`);
 
     await sql`
       UPDATE extraction_jobs 
@@ -378,6 +501,7 @@ async function processExtraction(jobId: string | undefined, processNext: boolean
 
     const blob = blobs[0];
     if (!blob) {
+      console.error(`Blob not found in inventory: ${job.blob_id}`);
       await sql`
         UPDATE extraction_jobs 
         SET status = 'failed', error_message = 'Blob not found in inventory'
@@ -386,10 +510,14 @@ async function processExtraction(jobId: string | undefined, processNext: boolean
       return;
     }
 
+    console.log(`Found blob: ${blob.file_name}, key=${blob.blob_key}, store=${blob.source_store}`);
+
     const sourceStore = getStore(SOURCE_STORE_NAME);
+    console.log(`Getting file from blob store: ${SOURCE_STORE_NAME}/${blob.blob_key}`);
     const fileBlob = await sourceStore.get(blob.blob_key, { type: 'arrayBuffer' });
 
     if (!fileBlob) {
+      console.error(`File not found in blob store: ${SOURCE_STORE_NAME}/${blob.blob_key}`);
       await sql`
         UPDATE extraction_jobs 
         SET status = 'failed', error_message = 'File not found in blob store'
@@ -439,13 +567,29 @@ async function processExtraction(jobId: string | undefined, processNext: boolean
   } catch (error) {
     console.error('Error in extraction processing:', error);
     
-    if (jobId) {
+    // Use currentJobId (which tracks the actual job being processed) instead of just jobId
+    const failedJobId = currentJobId || jobId;
+    if (failedJobId) {
       try {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`Marking job ${failedJobId} as failed: ${errorMessage}`);
+        
         await sql`
           UPDATE extraction_jobs 
-          SET status = 'failed', error_message = ${error instanceof Error ? error.message : 'Unknown error'}
-          WHERE job_id = ${jobId}
+          SET status = 'failed', error_message = ${errorMessage}
+          WHERE job_id = ${failedJobId}
         `;
+        
+        // Also update blob_inventory status to failed
+        const jobInfo = await sql`
+          SELECT blob_id FROM extraction_jobs WHERE job_id = ${failedJobId}
+        ` as { blob_id: string }[];
+        
+        if (jobInfo[0]) {
+          await sql`
+            UPDATE blob_inventory SET status = 'failed' WHERE blob_id = ${jobInfo[0].blob_id}
+          `;
+        }
       } catch (updateError) {
         console.error('Failed to update job status:', updateError);
       }
@@ -473,19 +617,18 @@ export default async function handler(req: Request, _context: Context): Promise<
     const body = await req.json() as { jobId?: string; processNext?: boolean };
     const { jobId, processNext } = body;
 
-    // Start background processing (fire and forget)
-    // The function will continue running after we return the response
-    void processExtraction(jobId, processNext);
+    // In serverless, we must await the processing - fire-and-forget doesn't work
+    // The function will be kept alive until processing completes
+    await processExtraction(jobId, processNext);
 
-    // Return 202 Accepted immediately - processing continues in background
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Extraction started in background',
+        message: 'Extraction completed',
         jobId: jobId || 'next-queued'
       }),
       { 
-        status: 202, 
+        status: 200, 
         headers: { 'Content-Type': 'application/json' } 
       }
     );

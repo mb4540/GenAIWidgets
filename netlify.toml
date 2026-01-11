@@ -10,6 +10,9 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."extraction-worker-background"]
+  timeout = 60
+
 # API routes redirect to functions
 [[redirects]]
   from = "/api/auth/signup"
@@ -109,6 +112,11 @@
 [[redirects]]
   from = "/api/extraction/worker"
   to = "/.netlify/functions/extraction-worker-background"
+  status = 200
+
+[[redirects]]
+  from = "/api/extraction/content"
+  to = "/.netlify/functions/extraction-content"
   status = 200
 
 # SPA fallback - must be last

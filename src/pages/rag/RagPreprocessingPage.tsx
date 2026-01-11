@@ -5,7 +5,9 @@ import {
   RagStatsCards,
   RagStatusFilter,
   RagInventoryTable,
+  ExtractionPreviewModal,
   type InventoryItem,
+  type ExtractedContent,
 } from './components';
 
 interface JobStats {
@@ -43,6 +45,12 @@ export default function RagPreprocessingPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [processingAll, setProcessingAll] = useState(false);
+  
+  // Preview modal state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState<ExtractedContent | null>(null);
+  const [previewFileName, setPreviewFileName] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -168,6 +176,35 @@ export default function RagPreprocessingPage(): React.ReactElement {
     }
   };
 
+  const handleViewContent = async (item: InventoryItem): Promise<void> => {
+    setPreviewLoading(true);
+    setPreviewFileName(item.fileName);
+    try {
+      const response = await fetch(`/api/extraction/content?blobId=${item.id}`, {
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json() as { success: boolean; content?: ExtractedContent; error?: string };
+      if (data.success && data.content) {
+        setPreviewContent(data.content);
+        setPreviewOpen(true);
+      } else {
+        setError(data.error || 'Failed to load extracted content');
+      }
+    } catch {
+      setError('Failed to load extracted content');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleAcceptContent = (content: string): void => {
+    // For now, just close the modal
+    // In the future, this could save edited content back
+    console.log('Accepted content:', content.length, 'chars');
+    setPreviewOpen(false);
+    setPreviewContent(null);
+  };
+
   const pendingCount = inventory.filter(i => i.status === 'pending').length;
 
   return (
@@ -221,8 +258,31 @@ export default function RagPreprocessingPage(): React.ReactElement {
         <RagInventoryTable
           inventory={inventory}
           onRetry={(id) => void handleRetry(id)}
+          onViewContent={(item) => void handleViewContent(item)}
           formatFileSize={formatFileSize}
         />
+      )}
+
+      {/* Extraction Preview Modal */}
+      <ExtractionPreviewModal
+        isOpen={previewOpen}
+        onClose={() => {
+          setPreviewOpen(false);
+          setPreviewContent(null);
+        }}
+        onAccept={handleAcceptContent}
+        extractedContent={previewContent}
+        fileName={previewFileName}
+      />
+
+      {/* Loading overlay for preview */}
+      {previewLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-card p-4 rounded-lg flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading extracted content...</span>
+          </div>
+        </div>
       )}
     </div>
   );
