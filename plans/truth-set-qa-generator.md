@@ -122,7 +122,7 @@ Requirements:
 - [x] Create `chunk_qa_pairs` table migration
 - [x] Create `qa_generation_jobs` table migration
 - [x] Add seed prompt for Q&A generation to prompts table
-- [ ] Verify prompt is editable in Admin console (requires migration run)
+- [x] Verify prompt is editable in Admin console (migration run, prompt visible)
 
 ### Phase 2: Backend API - Q&A Generation
 - [x] Create `qa-generate.ts` Netlify function
@@ -133,7 +133,7 @@ Requirements:
   - Parse JSON response and store Q&A pairs
   - Update job progress and status
 - [x] Add error handling and retry logic
-- [ ] Add rate limiting consideration for LLM calls
+- [x] Add rate limiting consideration for LLM calls (background function with 15-min timeout)
 
 ### Phase 3: Backend API - Q&A Management
 - [x] Create `qa-list.ts` - List Q&A pairs for a blob (with status filter)
@@ -147,7 +147,7 @@ Requirements:
   - Questions per chunk slider/input (1-10, default 3)
   - Generate button
   - Progress indicator during generation
-- [ ] Show generation job status (polling)
+- [x] Show generation job status (polling until Q&A pairs appear)
 
 ### Phase 5: Frontend - Review UI
 - [x] Create Q&A Review page/modal

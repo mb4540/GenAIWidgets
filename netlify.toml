@@ -148,6 +148,12 @@
   to = "/.netlify/functions/qa-bulk-approve"
   status = 200
 
+# Dashboard API
+[[redirects]]
+  from = "/api/dashboard/stats"
+  to = "/.netlify/functions/dashboard-stats"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
