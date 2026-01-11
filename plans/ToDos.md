@@ -14,10 +14,19 @@
 - [ ] Admin view: ability to see ALL blob storage files across all tenants
 - [ ] Admin view: show which tenant each file belongs to
 
+## File Viewer
+
+- [ ] Add zoom controls for images/PDFs
+- [ ] Consider file size limits for preview
+
 ## Admin Prompts - Edit Prompt Modal
 
 - [ ] Change Model Name from text field to dropdown (like AI Gateway Chat page)
 - [ ] Create a common/reusable model selector component that can be shared between Edit Prompt modal and AI Gateway Chat page
+
+## RAG Preprocessing
+
+- [ ] Add truth set Q&A generator for RAG Preprocessing
 
 ## Test Coverage
 

@@ -237,42 +237,67 @@ async function getPromptConfig(functionName: string): Promise<PromptConfig> {
 
 ## Implementation Plan
 
-### Phase 1: Prompts Table and Admin UI
-- [ ] Create migration `005_prompts_table.sql`
-- [ ] Run migration on Neon database
-- [ ] Seed extraction prompt
-- [ ] Create `admin-prompts.ts` Netlify function (CRUD)
-- [ ] Add Prompts tab to AdminPage
-- [ ] Create PromptEditModal component
-- [ ] Modify `extraction-worker.ts` to fetch prompt from database
+### Phase 1: Prompts Table and Admin UI ✅ COMPLETED
+- [x] Create migration `005_prompts_table.sql`
+  - Implemented in `migrations/005_prompts_table.sql`
+- [x] Run migration on Neon database
+- [x] Seed extraction prompt
+  - `extraction` and `ai_chat` prompts seeded
+- [x] Create `admin-prompts.ts` Netlify function (CRUD)
+  - Full CRUD: GET, POST, PUT, DELETE
+- [x] Add Prompts tab to AdminPage
+  - `PromptsTab.tsx` component with list view
+- [x] Create PromptEditModal component
+  - `PromptEditModal.tsx` with all fields
+- [x] Modify `extraction-worker.ts` to fetch prompt from database
+  - `getPromptConfig()` function in `extraction-worker-background.ts`
 
-### Phase 2: Extract Button in FilesPage
-- [ ] Add extraction status to file list API response
-- [ ] Create `getExtractionStatus` helper function
-- [ ] Add Extract button with sparkles icon
-- [ ] Implement click handler to call trigger + worker endpoints
-- [ ] Show status badges based on extraction state
-- [ ] Add loading state during extraction
+### Phase 2: Extract Button in FilesPage ✅ COMPLETED
+- [x] Add extraction status to file list API response
+  - `files-list.ts` joins with `blob_inventory` for status
+- [x] Create `getExtractionStatus` helper function
+  - `ExtractionStatus.tsx` component handles all states
+- [x] Add Extract button with sparkles icon
+  - Sparkles icon from Lucide in `ExtractionStatus.tsx`
+- [x] Implement click handler to call trigger + worker endpoints
+  - `FileItem.tsx` passes `onExtract` to `ExtractionStatus`
+- [x] Show status badges based on extraction state
+  - pending (Clock/yellow), processing (Spinner/blue), extracted (Check/green), failed (X/red)
+- [x] Add loading state during extraction
+  - `isExtracting` prop shows spinner during extraction
 
-### Phase 3: RAG Preprocessing Page
-- [ ] Create `RagPreprocessingPage.tsx` component
-- [ ] Add route in `App.tsx`
-- [ ] Add sidebar navigation item
-- [ ] Implement dashboard stats section
-- [ ] Implement extracted files table with pagination
-- [ ] Add status filters and search
-- [ ] Create chunk viewer modal
+### Phase 3: RAG Preprocessing Page ✅ COMPLETED
+- [x] Create `RagPreprocessingPage.tsx` component
+  - Full page at `src/pages/rag/RagPreprocessingPage.tsx`
+- [x] Add route in `App.tsx`
+  - Route: `/rag-preprocessing`
+- [x] Add sidebar navigation item
+  - `Layers` icon, "RAG Preprocessing" label in `AppLayout.tsx`
+- [x] Implement dashboard stats section
+  - `RagStatsCards.tsx` with Total, Pending, Extracted, Failed counts
+- [x] Implement extracted files table with pagination
+  - `RagInventoryTable.tsx` + `RagInventoryRow.tsx`
+- [x] Add status filters and search
+  - `RagStatusFilter.tsx` with All/Pending/Processing/Extracted/Failed buttons
+- [x] Create chunk viewer modal
+  - `ExtractionPreviewModal.tsx` for viewing extracted content
 
-### Phase 4: API Enhancements
-- [ ] Modify `files-list` to include extraction status from blob_inventory
-- [ ] Add endpoint to get chunks for a document
-- [ ] Add endpoint to re-trigger extraction
+### Phase 4: API Enhancements ✅ COMPLETED
+- [x] Modify `files-list` to include extraction status from blob_inventory
+  - `files-list.ts` returns `extractionStatus` and `chunkCount`
+- [x] Add endpoint to get chunks for a document
+  - `extraction-content.ts` - GET `/api/extraction/content?blobId=`
+- [x] Add endpoint to re-trigger extraction
+  - `extraction-trigger.ts` - POST `/api/extraction/trigger` with `blobId`
 
-### Phase 5: Polish
+### Phase 5: Polish (Partial)
 - [ ] Add toast notifications for extraction status
-- [ ] Add bulk extraction action
+- [x] Add bulk extraction action
+  - "Process All Pending" button in `RagPreprocessingPage.tsx`
 - [ ] Add extraction progress indicator
-- [ ] Error handling and retry UI
+- [x] Error handling and retry UI
+  - Failed status shows retry button in `ExtractionStatus.tsx`
+  - Re-extract button in `RagInventoryRow.tsx`
 
 ## UI Mockups
 
@@ -343,7 +368,7 @@ WHERE f.file_path = $1 AND f.tenant_id = $2
 - **New**: prompts table
 - Lucide icons: Sparkles, Clock, Check, X, Layers, MessageSquare
 
-## Open Questions
-- Should extraction be automatic on upload? (Currently manual)
-- Should we show extraction cost/token estimates before extracting?
-- Bulk extraction limit per request?
+## Open Questions (Resolved)
+- Should extraction be automatic on upload? → **Currently manual** (implemented)
+- Should we show extraction cost/token estimates before extracting? → **Not implemented**
+- Bulk extraction limit per request? → **100 files per batch** (in `extraction-trigger.ts`)

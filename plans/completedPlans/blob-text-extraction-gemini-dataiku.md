@@ -41,56 +41,75 @@ A single doc-level record containing document metadata and extraction stats.
 ## Implementation Plan
 
 ### Phase 1: Storage Access + Security
-- [ ] Define blob storage provider(s) and access pattern
-  - Signed URL generation OR server-side SDK download
-- [ ] Enforce server-side processing
-- [ ] Define allowed MIME types and max size limits
-- [ ] Define environment variables (no secrets in client)
-  - Blob credentials (provider-specific)
-  - Gemini/Vertex credentials
+- [x] Define blob storage provider(s) and access pattern
+  - Using Netlify Blobs with server-side SDK (`@netlify/blobs`)
+  - Source store: `user-files`, Output store: `extracted-chunks`
+- [x] Enforce server-side processing
+  - All extraction runs in `extraction-worker-background.ts` Netlify Function
+- [x] Define allowed MIME types and max size limits
+  - PDF, DOCX, DOC supported via file type detection
+  - Word docs converted to PDF before Gemini processing
+- [x] Define environment variables (no secrets in client)
+  - `DATABASE_URL` - Neon PostgreSQL connection
+  - `GEMINI_API_KEY` - Gemini API key (via Netlify AI Gateway)
+  - `GOOGLE_GEMINI_BASE_URL` - Optional custom base URL
 
 ### Phase 2: File Pre-Processing
-- [ ] Identify file type and extraction strategy
-  - PDF / DOCX / XLSX / PPTX / images / text
-- [ ] If necessary, convert to a Gemini-friendly representation
-  - Prefer sending the **original file bytes** when supported
-  - If not supported or too large, fall back to:
-    - page images for OCR-style extraction
-    - text extraction via lightweight parser, then Gemini for cleanup/structure
-- [ ] Compute `byteHash` (SHA-256) for dedupe
+- [x] Identify file type and extraction strategy
+  - Implemented in `extraction-worker-background.ts`: `isWordDocument()`, `isPdfDocument()`
+  - PDF sent directly to Gemini
+  - DOCX/DOC converted to PDF via `mammoth` + `pdf-lib`
+- [x] If necessary, convert to a Gemini-friendly representation
+  - Word→PDF conversion implemented in `convertWordToPdf()`
+  - Uses `mammoth` for text extraction, `pdf-lib` for PDF generation
+  - PDFs sent as base64 inline_data to Gemini
+- [x] Compute `byteHash` (SHA-256) for dedupe
+  - `byte_hash_sha256` column in `blob_inventory` table
+  - Content hash computed for output JSONL
 
 ### Phase 3: Gemini 2.5 Pro Extraction
-- [ ] Create a single “extraction” request template that returns structured output
-- [ ] Use a response contract that is easy to validate
-  - Avoid freeform prose responses
-- [ ] Include explicit instructions to:
-  - preserve headings
-  - preserve page numbers where known
-  - output tables as markdown (or a structured array if you prefer)
-  - keep original language
-  - avoid hallucinating missing content
+- [x] Create a single “extraction” request template that returns structured output
+  - Prompt stored in `prompts` table with `function_name='extraction'`
+  - Fetched via `getPromptConfig()` in worker
+  - Model: `gemini-2.5-pro-preview-05-06`
+- [x] Use a response contract that is easy to validate
+  - `responseMimeType: 'application/json'` enforces JSON output
+  - Fallback parsing for non-JSON responses
+- [x] Include explicit instructions to:
+  - preserve headings (via `headings[]` in page objects)
+  - preserve page numbers (via `pageNumber` field)
+  - keep original language (via `language` field)
+  - Return structured JSON with title, language, pages array
 
 ### Phase 4: Post-Processing + Normalization
 - [ ] Normalize whitespace and hyphenation artifacts
 - [ ] Remove repeated headers/footers where detected
-- [ ] Language detection (store `language`)
+- [x] Language detection (store `language`)
+  - Gemini returns `language` field in extraction response
+  - Stored in chunk records
 - [ ] Optional PII redaction hook (pluggable)
-- [ ] Generate extraction metrics
-  - char counts, token estimates, page counts, chunk counts
+- [x] Generate extraction metrics
+  - `chunk_count` tracked in `extraction_jobs` table
+  - `processing_time_ms` recorded per job
+  - `size_bytes` stored in `extraction_outputs`
 
 ### Phase 5: Chunking Strategy (Retrieval-Optimized)
-- [ ] Chunk using a hybrid strategy:
-  - Prefer section-boundary chunking when headings exist
-  - Fallback to token/character window chunking with overlap
-- [ ] Recommended targets:
-  - chunk size: ~800–1200 tokens
-  - overlap: ~80–150 tokens
-- [ ] Create `searchText` per chunk:
-  - `title + sectionPath + chunkText` (normalized)
+- [x] Chunk using a hybrid strategy:
+  - Page-aware chunking implemented in `createChunkRecords()`
+  - Falls back to character window chunking via `chunkText()`
+- [x] Recommended targets:
+  - chunk size: 1000 chars with 100 char overlap (implemented)
+  - Configurable in `chunkText(chunkSize=1000, overlap=100)`
+- [x] Create `searchText` per chunk:
+  - Implemented: `title + sectionPath + chunkText` concatenation
+  - Stored in `content.searchText` field
 
 ### Phase 6: Standardized JSON Schema (Dataiku-Friendly)
 - [ ] Implement schema validation (fail closed)
-- [ ] Write JSONL for chunk dataset
+- [x] Write JSONL for chunk dataset
+  - Implemented in `extraction-worker-background.ts`
+  - Output stored in `extracted-chunks` blob store
+  - Each line is a `ChunkRecord` with full schema
 - [ ] Write doc-level JSON record (optional)
 
 ### Phase 7: Dataiku Ingestion + Retrieval Evaluation
@@ -102,9 +121,11 @@ A single doc-level record containing document metadata and extraction stats.
   - test queries, top-k relevance checks
   - analyze failure modes (chunk size too small/large, missing headers, noisy artifacts)
 
-### Phase 8: Neon PostgreSQL Lineage Tracking
+### Phase 8: Neon PostgreSQL Lineage Tracking ✅ COMPLETED
 
 Track the complete lifecycle of blobs through the extraction pipeline with full accounting.
+
+**Status**: Fully implemented in `migrations/004_extraction_lineage_tables.sql`
 
 #### Database Schema
 
@@ -290,9 +311,15 @@ GROUP BY DATE(completed_at);
 ```
 
 ### Phase 9: Operations
-- [ ] Idempotency via `contentHash` and `extractionVersion`
-- [ ] Retry policy and partial failure handling
-- [ ] Logging + correlation IDs (no sensitive content in logs)
+- [x] Idempotency via `contentHash` and `extractionVersion`
+  - `content_hash_sha256` stored in `extraction_outputs`
+  - `extraction_version` tracked per job
+- [x] Retry policy and partial failure handling
+  - `retry_count` column in `extraction_jobs`
+  - Failed jobs update both `extraction_jobs` and `blob_inventory` status
+- [x] Logging + correlation IDs (no sensitive content in logs)
+  - `correlation_id` in `extraction_jobs` for distributed tracing
+  - Console logging throughout worker with job context
 - [ ] Reprocessing workflow when prompts/models change
 - [ ] Blob inventory sync job (discover new files, mark deleted)
 - [ ] Stale extraction detection (re-extract when model/prompt changes)
@@ -426,22 +453,23 @@ This enables deterministic downstream chunking rather than asking the model to d
    └── Ingests into Dataiku dataset
 ```
 
-## API Endpoints (Netlify Functions)
+## API Endpoints (Netlify Functions) ✅ IMPLEMENTED
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/extraction/inventory` | GET | List blob inventory with status filters |
-| `/api/extraction/inventory/:id` | GET | Get full lineage for a blob |
-| `/api/extraction/jobs` | GET | List extraction jobs with status/date filters |
-| `/api/extraction/jobs/:id` | GET | Get job details and metrics |
-| `/api/extraction/trigger` | POST | Manually trigger extraction for a blob |
-| `/api/extraction/stats` | GET | Aggregated extraction metrics |
+| Endpoint | Method | Description | Status |
+|----------|--------|-------------|--------|
+| `/api/extraction/inventory` | GET | List blob inventory with status filters | ✅ `extraction-inventory.ts` |
+| `/api/extraction/inventory?id=` | GET | Get full lineage for a blob | ✅ `extraction-inventory.ts` |
+| `/api/extraction/jobs` | GET | List extraction jobs with status/date filters | ✅ `extraction-jobs.ts` |
+| `/api/extraction/jobs?id=` | GET | Get job details and metrics | ✅ `extraction-jobs.ts` |
+| `/api/extraction/jobs?stats=true` | GET | Aggregated extraction metrics | ✅ `extraction-jobs.ts` |
+| `/api/extraction/trigger` | POST | Manually trigger extraction for a blob | ✅ `extraction-trigger.ts` |
+| `/api/extraction/content?blobId=` | GET | Get extracted content for a blob | ✅ `extraction-content.ts` |
 
-## Open Questions (Answering these will tighten implementation)
-- Which blob provider(s)? (Azure Blob / S3 / GCS) → **Netlify Blobs for now, S3 optional for extracted-chunks**
-- Target file types and max file sizes?
-- Do you want to store `fullText` at doc level, or only chunk records?
-- Do you have a preferred Dataiku retrieval stack (Vector DB / Dataiku Vector Store / external index)?
-- Do you need PII redaction, and if so what policy?
-- Should extraction run synchronously on upload or via background queue?
-- What is the retry policy for failed extractions? (max retries, backoff strategy)
+## Open Questions (Resolved)
+- Which blob provider(s)? → **Netlify Blobs** (implemented)
+- Target file types and max file sizes? → **PDF, DOCX, DOC** (implemented)
+- Do you want to store `fullText` at doc level, or only chunk records? → **Chunk records only** (implemented)
+- Do you have a preferred Dataiku retrieval stack? → **TBD** (not yet implemented)
+- Do you need PII redaction? → **Not yet implemented**
+- Should extraction run synchronously or via background queue? → **Background queue** via `extraction-trigger.ts` + `extraction-worker-background.ts`
+- What is the retry policy? → **retry_count tracked**, manual re-trigger supported
