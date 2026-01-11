@@ -87,8 +87,8 @@ export default function RagInventoryRow({
       <td className="px-4 py-3 text-sm text-muted-foreground">
         {new Date(item.discoveredAt).toLocaleDateString()}
       </td>
-      <td className="px-4 py-3 text-right">
-        <div className="flex items-center justify-end gap-2">
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-center gap-2">
           {item.status === 'extracted' && onViewContent && (
             <button
               onClick={() => onViewContent(item)}

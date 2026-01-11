@@ -28,7 +28,7 @@ export default function RagInventoryTable({
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Size</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Status</th>
             <th className="text-left px-4 py-3 text-sm font-medium text-muted-foreground">Discovered</th>
-            <th className="text-right px-4 py-3 text-sm font-medium text-muted-foreground">Actions</th>
+            <th className="text-center px-4 py-3 text-sm font-medium text-muted-foreground">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
