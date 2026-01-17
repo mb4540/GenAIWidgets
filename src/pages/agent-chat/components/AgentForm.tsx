@@ -419,8 +419,8 @@ export default function AgentForm({
               <input
                 type="range"
                 min="0"
-                max="2"
-                step="0.1"
+                max="1"
+                step="0.05"
                 value={temperature}
                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
                 className="w-full"
