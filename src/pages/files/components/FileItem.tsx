@@ -25,7 +25,7 @@ interface FileItemProps {
   onDelete: (fileId: string) => void;
   onExtract: (fileId: string) => void;
   onViewChunks: (fileId: string) => void;
-  getFileIcon: (mimeType: string | null) => string;
+  getFileIcon: (mimeType: string | null) => React.ReactNode;
   formatFileSize: (bytes: number | null) => string;
   showTenantInfo?: boolean;
 }
@@ -45,7 +45,7 @@ export default function FileItem({
   return (
     <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 border-b border-border last:border-b-0">
       <div className="flex items-center gap-3 flex-1">
-        <span className="text-xl">{getFileIcon(file.mimeType)}</span>
+        <span className="flex items-center justify-center">{getFileIcon(file.mimeType)}</span>
         <div>
           <div className="font-medium">{file.name}</div>
           <div className="text-xs text-muted-foreground">

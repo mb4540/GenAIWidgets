@@ -15,6 +15,8 @@ const adminNavItems = [
   { to: '/admin', label: 'Admin', icon: Settings },
 ];
 
+import { ThemeToggle } from '@/components/theme-toggle';
+
 export function AppLayout() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -88,13 +90,16 @@ export function AppLayout() {
               <p className="truncate text-sm font-medium text-foreground">{user?.fullName}</p>
               <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
             </div>
-            <button
-              onClick={handleSignOut}
-              className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <button
+                onClick={handleSignOut}
+                className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Folder, File, Upload, FolderPlus, Info } from 'lucide-react';
+import { 
+  Folder, 
+  File, 
+  Upload, 
+  FolderPlus, 
+  Info,
+  Image as ImageIcon,
+  Video,
+  Music,
+  FileText,
+  FileSpreadsheet,
+  FileArchive
+} from 'lucide-react';
 import PageInfoModal from '@/components/common/PageInfoModal';
 import { filesInfo } from './filesInfo';
 import FileViewerModal from '@/components/files/FileViewerModal';
@@ -31,16 +43,16 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function getFileIcon(mimeType: string | null): string {
-  if (!mimeType) return '📄';
-  if (mimeType.startsWith('image/')) return '🖼️';
-  if (mimeType.startsWith('video/')) return '🎬';
-  if (mimeType.startsWith('audio/')) return '🎵';
-  if (mimeType.includes('pdf')) return '📕';
-  if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
-  if (mimeType.includes('sheet') || mimeType.includes('excel')) return '📊';
-  if (mimeType.includes('zip') || mimeType.includes('archive')) return '📦';
-  return '📄';
+function getFileIcon(mimeType: string | null): React.ReactNode {
+  if (!mimeType) return <File className="h-6 w-6 text-muted-foreground" />;
+  if (mimeType.startsWith('image/')) return <ImageIcon className="h-6 w-6 text-purple-500" />;
+  if (mimeType.startsWith('video/')) return <Video className="h-6 w-6 text-red-500" />;
+  if (mimeType.startsWith('audio/')) return <Music className="h-6 w-6 text-pink-500" />;
+  if (mimeType.includes('pdf')) return <FileText className="h-6 w-6 text-red-500" />;
+  if (mimeType.includes('word') || mimeType.includes('document')) return <FileText className="h-6 w-6 text-blue-500" />;
+  if (mimeType.includes('sheet') || mimeType.includes('excel')) return <FileSpreadsheet className="h-6 w-6 text-green-500" />;
+  if (mimeType.includes('zip') || mimeType.includes('archive')) return <FileArchive className="h-6 w-6 text-orange-500" />;
+  return <File className="h-6 w-6 text-muted-foreground" />;
 }
 
 export default function FilesPage(): React.ReactElement {
