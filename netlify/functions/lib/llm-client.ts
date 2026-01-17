@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ModelProvider } from '../../../src/types/agent';
 
 export interface LLMMessage {
@@ -215,62 +214,80 @@ async function callAnthropic(
 
 async function callGemini(
   messages: LLMMessage[],
-  tools: ToolDefinition[],
+  _tools: ToolDefinition[],
   options: LLMClientOptions
 ): Promise<LLMResponse> {
-  const apiKey = process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
+  const baseUrl = process.env.GOOGLE_GEMINI_BASE_URL;
+
   if (!apiKey) {
-    throw new Error('GOOGLE_API_KEY not configured');
+    throw new Error('GEMINI_API_KEY not configured');
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: options.model });
+  if (!baseUrl) {
+    throw new Error('GOOGLE_GEMINI_BASE_URL not configured');
+  }
 
   const systemMessage = messages.find((m) => m.role === 'system');
   const nonSystemMessages = messages.filter((m) => m.role !== 'system');
 
-  const geminiHistory = nonSystemMessages.slice(0, -1).map((m) => ({
+  const geminiContents = nonSystemMessages.map((m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
 
-  const lastMessage = nonSystemMessages[nonSystemMessages.length - 1];
-  const prompt = lastMessage?.content || '';
-
-  const geminiTools = tools.length > 0 ? [{
-    functionDeclarations: tools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: {
-        type: 'object' as const,
-        properties: (t.parameters as { properties?: Record<string, unknown> }).properties || {},
-        required: (t.parameters as { required?: string[] }).required || [],
-      },
-    })),
-  }] : undefined;
-
-  const chat = model.startChat({
-    history: geminiHistory,
-    systemInstruction: systemMessage?.content,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tools: geminiTools as any,
+  const requestBody: Record<string, unknown> = {
+    contents: geminiContents,
     generationConfig: {
       temperature: options.temperature,
       maxOutputTokens: options.maxTokens || 4096,
     },
-  });
+  };
 
-  const result = await chat.sendMessage(prompt);
-  const response = result.response;
+  if (systemMessage?.content) {
+    requestBody.systemInstruction = { parts: [{ text: systemMessage.content }] };
+  }
+
+  const response = await fetch(
+    `${baseUrl}/v1beta/models/${options.model}:generateContent`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify(requestBody),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(`Gemini error: ${response.status} - ${errorData}`);
+  }
+
+  interface GeminiResponse {
+    candidates?: Array<{
+      content?: {
+        parts?: Array<{
+          text?: string;
+          functionCall?: { name: string; args: Record<string, unknown> };
+        }>;
+      };
+      finishReason?: string;
+    }>;
+    usageMetadata?: { totalTokenCount?: number };
+  }
+
+  const data = await response.json() as GeminiResponse;
 
   let content: string | null = null;
   const toolCalls: ToolCall[] = [];
 
-  for (const candidate of response.candidates || []) {
+  for (const candidate of data.candidates || []) {
     for (const part of candidate.content?.parts || []) {
-      if ('text' in part) {
-        content = part.text || null;
-      } else if ('functionCall' in part && part.functionCall) {
+      if (part.text) {
+        content = part.text;
+      } else if (part.functionCall) {
         toolCalls.push({
           id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           type: 'function',
@@ -287,7 +304,7 @@ async function callGemini(
     content,
     tool_calls: toolCalls.length > 0 ? toolCalls : null,
     reasoning: null,
-    tokens_used: response.usageMetadata?.totalTokenCount || 0,
-    finish_reason: response.candidates?.[0]?.finishReason || 'STOP',
+    tokens_used: data.usageMetadata?.totalTokenCount || 0,
+    finish_reason: data.candidates?.[0]?.finishReason || 'STOP',
   };
 }
