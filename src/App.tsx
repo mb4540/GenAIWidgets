@@ -10,6 +10,7 @@ import AiGatewayChatPage from './pages/ai/AiGatewayChatPage'
 import FilesPage from './pages/files/FilesPage'
 import AdminPage from './pages/admin/AdminPage'
 import RagPreprocessingPage from './pages/rag/RagPreprocessingPage'
+import AgentManagementPage from './pages/agent-chat/AgentManagementPage'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
               <Route path="/ai-gateway-chat" element={<AiGatewayChatPage />} />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/rag-preprocessing" element={<RagPreprocessingPage />} />
+              <Route path="/agent-chat" element={<AgentManagementPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>
