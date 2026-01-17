@@ -305,3 +305,16 @@ INSERT INTO agent_tools (
 - File paths are relative to the tenant's root (/)
 - Binary files can be listed but not read via read_file
 - Consider adding a `search_files` tool in the future for finding files by name/content
+
+---
+
+## TODO: Debug create_file Tool Error
+
+**Status:** Still failing after user_id fix (2026-01-17)
+
+**Next Steps:**
+1. Check Netlify function logs for `tool-files` to see actual error message
+2. Test the `/api/tools/files` endpoint directly with curl/Postman
+3. Verify the agent is passing correct parameters (file_path, content)
+4. Check if blob storage is working correctly
+5. Add more detailed error logging to tool-files.ts
