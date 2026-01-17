@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Shield, ShieldOff } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Trash2, Shield, ShieldOff, Pencil, Eye, Building2 } from 'lucide-react';
+import AdminSearchInput from './AdminSearchInput';
 
 interface User {
   id: string;
@@ -8,6 +9,7 @@ interface User {
   phone: string | null;
   isAdmin: boolean;
   createdAt: string;
+  membershipCount?: number;
 }
 
 interface UsersTabProps {
@@ -16,6 +18,8 @@ interface UsersTabProps {
   onCreateUser: (data: { email: string; password: string; fullName: string; isAdmin: boolean }) => Promise<void>;
   onToggleAdmin: (userId: string, currentIsAdmin: boolean) => Promise<void>;
   onDeleteUser: (userId: string) => Promise<void>;
+  onEditUser?: (user: User) => void;
+  onViewUser?: (user: User) => void;
 }
 
 export default function UsersTab({
@@ -24,12 +28,25 @@ export default function UsersTab({
   onCreateUser,
   onToggleAdmin,
   onDeleteUser,
+  onEditUser,
+  onViewUser,
 }: UsersTabProps): React.ReactElement {
   const [showCreate, setShowCreate] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newFullName, setNewFullName] = useState('');
   const [newIsAdmin, setNewIsAdmin] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users;
+    const query = searchQuery.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.fullName.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query)
+    );
+  }, [users, searchQuery]);
 
   const handleCreate = async (): Promise<void> => {
     if (!newEmail.trim() || !newPassword || !newFullName.trim()) return;
@@ -57,6 +74,12 @@ export default function UsersTab({
           <Plus className="h-4 w-4" /> Add User
         </button>
       </div>
+
+      <AdminSearchInput
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search users by name or email..."
+      />
 
       {showCreate && (
         <div className="bg-card border border-border rounded-lg p-4 space-y-4">
@@ -108,21 +131,47 @@ export default function UsersTab({
       )}
 
       <div className="bg-card border border-border rounded-lg divide-y divide-border">
-        {users.map((u) => (
+        {filteredUsers.map((u) => (
           <div key={u.id} className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
                 {u.fullName.charAt(0).toUpperCase()}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="font-medium flex items-center gap-2">
                   {u.fullName}
                   {u.isAdmin && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Admin</span>}
                 </div>
-                <div className="text-sm text-muted-foreground">{u.email}</div>
+                <div className="text-sm text-muted-foreground flex items-center gap-3">
+                  <span>{u.email}</span>
+                  {u.membershipCount !== undefined && (
+                    <span className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {u.membershipCount} {u.membershipCount === 1 ? 'tenant' : 'tenants'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {onViewUser && (
+                <button
+                  onClick={() => onViewUser(u)}
+                  className="p-2 text-muted-foreground hover:text-foreground"
+                  title="View details"
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+              )}
+              {onEditUser && (
+                <button
+                  onClick={() => onEditUser(u)}
+                  className="p-2 text-muted-foreground hover:text-foreground"
+                  title="Edit user"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
               <button
                 onClick={() => void onToggleAdmin(u.id, u.isAdmin)}
                 className={`p-2 ${u.isAdmin ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
@@ -134,12 +183,18 @@ export default function UsersTab({
                 onClick={() => void onDeleteUser(u.id)}
                 className="p-2 text-muted-foreground hover:text-destructive"
                 disabled={u.id === currentUserId}
+                title="Delete user"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
           </div>
         ))}
+        {filteredUsers.length === 0 && users.length > 0 && (
+          <div className="p-8 text-center text-muted-foreground">
+            No users match your search
+          </div>
+        )}
         {users.length === 0 && (
           <div className="p-8 text-center text-muted-foreground">No users yet</div>
         )}

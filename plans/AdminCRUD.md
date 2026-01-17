@@ -38,25 +38,25 @@ users (1) ──────< admins
 ## Gaps to Address
 
 ### Tenants Tab
-- [ ] Add Edit button and modal to update tenant name
-- [ ] Show member count per tenant
-- [ ] Add "View Members" action to see/manage tenant's memberships
-- [ ] Add search/filter by name
-- [ ] Improve delete confirmation with impact summary (member count, file count)
+- [x] Add Edit button and modal to update tenant name
+- [x] Show member count per tenant
+- [x] Add "View Members" action to see/manage tenant's memberships
+- [x] Add search/filter by name
+- [x] Improve delete confirmation with impact summary (member count, file count)
 
 ### Users Tab
-- [ ] Add Edit button and modal for full user editing (name, phone, email)
-- [ ] Show membership count per user
-- [ ] Add "View Memberships" action to see/manage user's tenant memberships
-- [ ] Add search/filter by name/email
+- [x] Add Edit button and modal for full user editing (name, phone, email)
+- [x] Show membership count per user
+- [x] Add "View Memberships" action to see/manage user's tenant memberships
+- [x] Add search/filter by name/email
 - [ ] Show admin granted date and granted by info
-- [ ] Improve delete confirmation with impact summary
+- [x] Improve delete confirmation with impact summary
 
 ### Memberships Tab
-- [ ] Add Edit button to change membership role (owner/member)
-- [ ] Add search/filter by tenant name, user name, or role
+- [x] Add Edit button to change membership role (owner/member)
+- [x] Add search/filter by tenant name, user name, or role
 - [ ] Group by tenant or user view toggle
-- [ ] Show when membership was created
+- [x] Show when membership was created
 
 ### Cross-Entity Features
 - [ ] Click tenant name → view tenant details with members list
@@ -70,73 +70,73 @@ users (1) ──────< admins
 ### Phase 1: Tenants Tab Enhancement
 
 #### 1.1 Edit Tenant Modal
-- [ ] Create `TenantEditModal.tsx` component
+- [x] Create `TenantEditModal.tsx` component
   - Fields: Name (required)
   - Shows: Slug (read-only, auto-generated)
   - Shows: Created date
   - Shows: Member count
-- [ ] Add Edit (pencil) icon button to tenant row
-- [ ] Wire up PUT `/api/admin/tenants?id=` call
+- [x] Add Edit (pencil) icon button to tenant row
+- [x] Wire up PUT `/api/admin/tenants?id=` call
 
 #### 1.2 Tenant Detail View
-- [ ] Create `TenantDetailModal.tsx` component
+- [x] Create `TenantDetailModal.tsx` component
   - Shows tenant info (name, slug, created)
   - Lists all members with role badges
   - Quick-add member button
   - Remove member button per row
-- [ ] Add "View" (eye) icon button to tenant row
+- [x] Add "View" (eye) icon button to tenant row
 
 #### 1.3 Tenant List Improvements
-- [ ] Add search input to filter tenants by name
-- [ ] Show member count badge on each tenant row
-- [ ] Enhanced delete confirmation showing:
+- [x] Add search input to filter tenants by name
+- [x] Show member count badge on each tenant row
+- [x] Enhanced delete confirmation showing:
   - Number of members that will lose access
   - Number of files that will be deleted
 
 ### Phase 2: Users Tab Enhancement
 
 #### 2.1 Edit User Modal
-- [ ] Create `UserEditModal.tsx` component
+- [x] Create `UserEditModal.tsx` component
   - Fields: Full Name, Phone, Email (with validation)
   - Shows: Created date, Updated date
   - Shows: Admin status with granted info
   - Shows: Membership count
-- [ ] Add Edit (pencil) icon button to user row
-- [ ] Wire up PUT `/api/admin/users?id=` call
+- [x] Add Edit (pencil) icon button to user row
+- [x] Wire up PUT `/api/admin/users?id=` call
 
 #### 2.2 User Detail View
-- [ ] Create `UserDetailModal.tsx` component
+- [x] Create `UserDetailModal.tsx` component
   - Shows user info (name, email, phone, admin status)
   - Lists all tenant memberships with roles
   - Quick-add to tenant button
   - Remove from tenant button per row
-- [ ] Add "View" (eye) icon button to user row
+- [x] Add "View" (eye) icon button to user row
 
 #### 2.3 Users List Improvements
-- [ ] Add search input to filter by name or email
-- [ ] Show membership count badge on each user row
+- [x] Add search input to filter by name or email
+- [x] Show membership count badge on each user row
 - [ ] Show admin granted date on hover/tooltip
-- [ ] Enhanced delete confirmation showing:
+- [x] Enhanced delete confirmation showing:
   - Number of memberships that will be removed
   - Warning if user owns any tenants
 
 ### Phase 3: Memberships Tab Enhancement
 
 #### 3.1 Edit Membership Role
-- [ ] Add role dropdown/toggle inline or via modal
-- [ ] Wire up PUT `/api/admin/memberships?id=` call
+- [x] Add role dropdown/toggle inline or via modal
+- [x] Wire up PUT `/api/admin/memberships?id=` call
 - [ ] Show confirmation when changing from owner to member
 
 #### 3.2 Memberships List Improvements
-- [ ] Add search input to filter by tenant name or user name
-- [ ] Add role filter dropdown (All / Owner / Member)
+- [x] Add search input to filter by tenant name or user name
+- [x] Add role filter dropdown (All / Owner / Member)
 - [ ] Add view toggle: "Group by Tenant" / "Group by User" / "Flat List"
-- [ ] Show created date in row
+- [x] Show created date in row
 
 ### Phase 4: Shared Components & Polish
 
 #### 4.1 Reusable Components
-- [ ] Create `AdminSearchInput.tsx` for consistent search UI
+- [x] Create `AdminSearchInput.tsx` for consistent search UI
 - [ ] Create `AdminConfirmDialog.tsx` for enhanced delete confirmations
 - [ ] Create `AdminBadge.tsx` for role/status badges
 
@@ -147,8 +147,8 @@ users (1) ──────< admins
 - [ ] Add success toast notifications for CRUD operations
 
 #### 4.3 API Enhancements (if needed)
-- [ ] Add `memberCount` to tenant list response
-- [ ] Add `membershipCount` to user list response
+- [x] Add `memberCount` to tenant list response
+- [x] Add `membershipCount` to user list response
 - [ ] Add `fileCount` to tenant for delete confirmation
 - [ ] Add `grantedByName` to user admin info
 

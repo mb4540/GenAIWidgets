@@ -10,6 +10,10 @@ import {
   MembershipsTab,
   PromptsTab,
   PromptEditModal,
+  TenantEditModal,
+  TenantDetailModal,
+  UserEditModal,
+  UserDetailModal,
   type Tenant,
   type User,
   type Membership,
@@ -30,6 +34,10 @@ export default function AdminPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
 
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null);
+  const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [promptForm, setPromptForm] = useState<PromptFormData>({
     displayName: '',
@@ -127,7 +135,12 @@ export default function AdminPage(): React.ReactElement {
   };
 
   const handleDeleteTenant = async (tenantId: string): Promise<void> => {
-    if (!confirm('Delete this tenant? All associated data will be removed.')) return;
+    const tenant = tenants.find((t) => t.id === tenantId);
+    const memberCount = tenant?.memberCount ?? 0;
+    const message = memberCount > 0
+      ? `Delete "${tenant?.name}"? This will remove ${memberCount} member${memberCount === 1 ? '' : 's'} and all associated data.`
+      : 'Delete this tenant? All associated data will be removed.';
+    if (!confirm(message)) return;
     try {
       const response = await fetch(`/api/admin/tenants?id=${tenantId}`, {
         method: 'DELETE',
@@ -143,6 +156,19 @@ export default function AdminPage(): React.ReactElement {
     } catch {
       setError('Failed to delete tenant');
     }
+  };
+
+  const handleUpdateTenant = async (tenantId: string, name: string): Promise<void> => {
+    const response = await fetch(`/api/admin/tenants?id=${tenantId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name }),
+    });
+    const data = await response.json() as { success: boolean; error?: string };
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update tenant');
+    }
+    void fetchTenants();
   };
 
   const handleCreateUser = async (userData: { email: string; password: string; fullName: string; isAdmin: boolean }): Promise<void> => {
@@ -182,7 +208,12 @@ export default function AdminPage(): React.ReactElement {
   };
 
   const handleDeleteUser = async (userId: string): Promise<void> => {
-    if (!confirm('Delete this user? This cannot be undone.')) return;
+    const userToDelete = users.find((u) => u.id === userId);
+    const membershipCount = userToDelete?.membershipCount ?? 0;
+    const message = membershipCount > 0
+      ? `Delete "${userToDelete?.fullName}"? This will remove ${membershipCount} membership${membershipCount === 1 ? '' : 's'}. This cannot be undone.`
+      : 'Delete this user? This cannot be undone.';
+    if (!confirm(message)) return;
     try {
       const response = await fetch(`/api/admin/users?id=${userId}`, {
         method: 'DELETE',
@@ -198,6 +229,19 @@ export default function AdminPage(): React.ReactElement {
     } catch {
       setError('Failed to delete user');
     }
+  };
+
+  const handleUpdateUser = async (userId: string, data: { fullName: string; phone: string; email: string }): Promise<void> => {
+    const response = await fetch(`/api/admin/users?id=${userId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    const result = await response.json() as { success: boolean; error?: string };
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to update user');
+    }
+    void fetchUsers();
   };
 
   const handleCreateMembership = async (membershipData: { tenantId: string; userId: string; role: 'owner' | 'member' }): Promise<void> => {
@@ -233,6 +277,24 @@ export default function AdminPage(): React.ReactElement {
       }
     } catch {
       setError('Failed to delete membership');
+    }
+  };
+
+  const handleUpdateMembershipRole = async (membershipId: string, role: 'owner' | 'member'): Promise<void> => {
+    try {
+      const response = await fetch(`/api/admin/memberships?id=${membershipId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ role }),
+      });
+      const data = await response.json() as { success: boolean; error?: string };
+      if (data.success) {
+        void fetchMemberships();
+      } else {
+        setError(data.error || 'Failed to update membership role');
+      }
+    } catch {
+      setError('Failed to update membership role');
     }
   };
 
@@ -365,6 +427,8 @@ export default function AdminPage(): React.ReactElement {
               tenants={tenants}
               onCreateTenant={handleCreateTenant}
               onDeleteTenant={handleDeleteTenant}
+              onEditTenant={setEditingTenant}
+              onViewTenant={setViewingTenant}
             />
           )}
 
@@ -375,6 +439,8 @@ export default function AdminPage(): React.ReactElement {
               onCreateUser={handleCreateUser}
               onToggleAdmin={handleToggleAdmin}
               onDeleteUser={handleDeleteUser}
+              onEditUser={setEditingUser}
+              onViewUser={setViewingUser}
             />
           )}
 
@@ -385,6 +451,7 @@ export default function AdminPage(): React.ReactElement {
               users={users}
               onCreateMembership={handleCreateMembership}
               onDeleteMembership={handleDeleteMembership}
+              onUpdateMembershipRole={handleUpdateMembershipRole}
             />
           )}
 
@@ -405,6 +472,69 @@ export default function AdminPage(): React.ReactElement {
           onFormChange={setPromptForm}
           onSave={() => void handleSavePrompt()}
           onClose={() => setEditingPrompt(null)}
+        />
+      )}
+
+      {editingTenant && (
+        <TenantEditModal
+          tenant={editingTenant}
+          onSave={handleUpdateTenant}
+          onClose={() => setEditingTenant(null)}
+        />
+      )}
+
+      {viewingTenant && (
+        <TenantDetailModal
+          tenant={viewingTenant}
+          members={memberships
+            .filter((m) => m.tenantId === viewingTenant.id)
+            .map((m) => {
+              const memberUser = users.find((u) => u.id === m.userId);
+              return {
+                membershipId: m.id,
+                userId: m.userId,
+                fullName: memberUser?.fullName || 'Unknown',
+                email: memberUser?.email || '',
+                role: m.role,
+              };
+            })}
+          onRemoveMember={handleDeleteMembership}
+          onAddMember={() => {
+            setViewingTenant(null);
+            setActiveTab('memberships');
+          }}
+          onClose={() => setViewingTenant(null)}
+        />
+      )}
+
+      {editingUser && (
+        <UserEditModal
+          user={editingUser}
+          onSave={handleUpdateUser}
+          onClose={() => setEditingUser(null)}
+        />
+      )}
+
+      {viewingUser && (
+        <UserDetailModal
+          user={viewingUser}
+          memberships={memberships
+            .filter((m) => m.userId === viewingUser.id)
+            .map((m) => {
+              const memberTenant = tenants.find((t) => t.id === m.tenantId);
+              return {
+                membershipId: m.id,
+                tenantId: m.tenantId,
+                tenantName: memberTenant?.name || 'Unknown',
+                role: m.role,
+              };
+            })}
+          onRemoveMembership={handleDeleteMembership}
+          onAddMembership={() => {
+            setViewingUser(null);
+            setActiveTab('memberships');
+          }}
+          onClose={() => setViewingUser(null)}
         />
       )}
     </div>

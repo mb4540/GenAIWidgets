@@ -30,10 +30,17 @@ export default async function handler(req: Request, _context: Context): Promise<
   try {
     if (req.method === 'GET') {
       const tenants = await sql`
-        SELECT tenant_id, name, slug, created_at
-        FROM tenants
-        ORDER BY name
-      ` as TenantRow[];
+        SELECT 
+          t.tenant_id, 
+          t.name, 
+          t.slug, 
+          t.created_at,
+          COUNT(m.membership_id)::int as member_count
+        FROM tenants t
+        LEFT JOIN memberships m ON t.tenant_id = m.tenant_id
+        GROUP BY t.tenant_id, t.name, t.slug, t.created_at
+        ORDER BY t.name
+      ` as (TenantRow & { member_count: number })[];
 
       return createSuccessResponse({
         tenants: tenants.map((t) => ({
@@ -41,6 +48,7 @@ export default async function handler(req: Request, _context: Context): Promise<
           name: t.name,
           slug: t.slug,
           createdAt: t.created_at,
+          memberCount: t.member_count,
         })),
       });
     }

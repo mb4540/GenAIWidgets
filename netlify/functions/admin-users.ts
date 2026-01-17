@@ -35,11 +35,14 @@ export default async function handler(req: Request, _context: Context): Promise<
     if (req.method === 'GET') {
       const users = await sql`
         SELECT u.user_id, u.email, u.full_name, u.phone, u.created_at, u.updated_at,
-               CASE WHEN a.admin_id IS NOT NULL THEN true ELSE false END AS is_admin
+               CASE WHEN a.admin_id IS NOT NULL THEN true ELSE false END AS is_admin,
+               COUNT(m.membership_id)::int as membership_count
         FROM users u
         LEFT JOIN admins a ON u.user_id = a.user_id
+        LEFT JOIN memberships m ON u.user_id = m.user_id
+        GROUP BY u.user_id, u.email, u.full_name, u.phone, u.created_at, u.updated_at, a.admin_id
         ORDER BY u.full_name
-      ` as UserRow[];
+      ` as (UserRow & { membership_count: number })[];
 
       return createSuccessResponse({
         users: users.map((u) => ({
@@ -50,6 +53,7 @@ export default async function handler(req: Request, _context: Context): Promise<
           isAdmin: u.is_admin,
           createdAt: u.created_at,
           updatedAt: u.updated_at,
+          membershipCount: u.membership_count,
         })),
       });
     }
@@ -119,14 +123,25 @@ export default async function handler(req: Request, _context: Context): Promise<
       const body = await req.json() as { 
         fullName?: string; 
         phone?: string;
+        email?: string;
         isAdmin?: boolean;
       };
-      const { fullName, phone, isAdmin } = body;
+      const { fullName, phone, email, isAdmin } = body;
 
-      if (fullName) {
+      if (fullName || email !== undefined) {
+        if (email) {
+          const existing = await sql`SELECT user_id FROM users WHERE email = ${email} AND user_id != ${userId}`;
+          if (existing.length > 0) {
+            return createErrorResponse('Email already in use', 409);
+          }
+        }
         await sql`
           UPDATE users
-          SET full_name = ${fullName}, phone = ${phone || null}, updated_at = now()
+          SET 
+            full_name = COALESCE(${fullName}, full_name), 
+            phone = ${phone || null}, 
+            email = COALESCE(${email}, email),
+            updated_at = now()
           WHERE user_id = ${userId}
         `;
       }
