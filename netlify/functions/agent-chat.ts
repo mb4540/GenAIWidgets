@@ -391,6 +391,8 @@ export default async function handler(req: Request, _context: Context): Promise<
     });
   } catch (error) {
     console.error('Error in agent-chat:', error);
-    return createErrorResponse('Internal server error', 500);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error details:', errorMessage);
+    return createErrorResponse(`Internal server error: ${errorMessage}`, 500);
   }
 }
