@@ -241,14 +241,19 @@ async function callGemini(
     functionDeclarations: tools.map((t) => ({
       name: t.name,
       description: t.description,
-      parameters: t.parameters,
+      parameters: {
+        type: 'object' as const,
+        properties: (t.parameters as { properties?: Record<string, unknown> }).properties || {},
+        required: (t.parameters as { required?: string[] }).required || [],
+      },
     })),
   }] : undefined;
 
   const chat = model.startChat({
     history: geminiHistory,
     systemInstruction: systemMessage?.content,
-    tools: geminiTools,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tools: geminiTools as any,
     generationConfig: {
       temperature: options.temperature,
       maxOutputTokens: options.maxTokens || 4096,
