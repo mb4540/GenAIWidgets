@@ -123,8 +123,13 @@ export default async function handler(req: Request, _context: Context): Promise<
     if (action === 'assign' && agentId && toolId) {
       if (req.method === 'POST') {
         // Assign tool to agent
-        const body = await req.json() as { is_required?: boolean };
-        const isRequired = body.is_required ?? false;
+        let isRequired = false;
+        try {
+          const body = await req.json() as { is_required?: boolean };
+          isRequired = body.is_required ?? false;
+        } catch {
+          // Body may be empty, use default
+        }
 
         // Verify agent exists and belongs to tenant
         const agentCheck = await sql`
