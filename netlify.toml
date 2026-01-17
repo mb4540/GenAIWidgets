@@ -196,6 +196,12 @@
   to = "/.netlify/functions/tool-weather"
   status = 200
 
+# AI helper endpoints
+[[redirects]]
+  from = "/api/generate-agent-prompt"
+  to = "/.netlify/functions/generate-agent-prompt"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Sparkles, Loader2 } from 'lucide-react';
 import type { Agent, AgentInput, AgentTool, ModelProvider } from '@/types/agent';
 import { AVAILABLE_MODELS } from '@/components/common/ModelSelector';
 
@@ -51,6 +51,7 @@ export default function AgentForm({
   const [availableTools, setAvailableTools] = useState<AgentTool[]>([]);
   const [assignedToolIds, setAssignedToolIds] = useState<Set<string>>(new Set());
   const [loadingTools, setLoadingTools] = useState(false);
+  const [generatingPrompt, setGeneratingPrompt] = useState(false);
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -96,6 +97,39 @@ export default function AgentForm({
       void fetchToolsAndAssignments();
     }
   }, [agent, getAuthHeaders]);
+
+  const canGeneratePrompt = name.trim() && description.trim() && goal.trim();
+
+  const handleGeneratePrompt = async () => {
+    if (!canGeneratePrompt || generatingPrompt) return;
+    
+    setGeneratingPrompt(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/generate-agent-prompt', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim(),
+          goal: goal.trim(),
+        }),
+      });
+      
+      const data = await response.json() as { success: boolean; prompt?: string; error?: string };
+      
+      if (data.success && data.prompt) {
+        setSystemPrompt(data.prompt);
+      } else {
+        setError(data.error || 'Failed to generate prompt');
+      }
+    } catch {
+      setError('Failed to generate prompt');
+    } finally {
+      setGeneratingPrompt(false);
+    }
+  };
 
   const handleToggleTool = async (toolId: string) => {
     if (!agent) return;
@@ -301,7 +335,23 @@ export default function AgentForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">System Prompt *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium">System Prompt *</label>
+              <button
+                type="button"
+                onClick={() => void handleGeneratePrompt()}
+                disabled={!canGeneratePrompt || generatingPrompt}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title={!canGeneratePrompt ? 'Fill in Name, Description, and Goal first' : 'Generate system prompt using AI'}
+              >
+                {generatingPrompt ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {generatingPrompt ? 'Generating...' : 'Build with AI'}
+              </button>
+            </div>
             <textarea
               value={systemPrompt}
               onChange={(e) => setSystemPrompt(e.target.value)}
