@@ -31,7 +31,7 @@ This execution plan breaks down the Agent Mode Chat feature into testable phases
 | 1     | Database Schema            | ✅ COMPLETED   | 2026-01-17      |
 | 2     | Agent CRUD API             | ✅ COMPLETED   | 2026-01-17      |
 | 3     | Agent Management UI        | ✅ COMPLETED   | 2026-01-17      |
-| 4     | Tools & MCP Infrastructure | ⬜ NOT STARTED | -               |
+| 4     | Tools & MCP Infrastructure | 🔄 IN PROGRESS | -               |
 | 5     | Session & Memory API       | ⬜ NOT STARTED | -               |
 | 6     | Agent Loop (Core Engine)   | ⬜ NOT STARTED | -               |
 | 7     | Streaming Infrastructure   | ⬜ NOT STARTED | -               |
@@ -195,21 +195,21 @@ _Document any issues or decisions made during this phase:_
 
 ## Phase 4: Tools & MCP Infrastructure
 
-**Status:** ⬜ NOT STARTED
+**Status:** 🔄 IN PROGRESS
 
 **Goal:** Implement tools registry and MCP server management.
 
 ### Tasks
 
-- [ ] 4.1 Create `netlify/functions/agent-tools.ts`
-  - [ ] CRUD for tools
-  - [ ] Tool assignment to agents
-- [ ] 4.2 Create `netlify/functions/mcp-servers.ts`
-  - [ ] CRUD for MCP servers
-  - [ ] Health check endpoint
-  - [ ] Credential encryption/decryption
+- [x] 4.1 Create `netlify/functions/agent-tools.ts`
+  - [x] CRUD for tools
+  - [x] Tool assignment to agents
+- [x] 4.2 Create `netlify/functions/mcp-servers.ts`
+  - [x] CRUD for MCP servers
+  - [x] Health check endpoint
+  - [x] Credential encryption/decryption
 - [ ] 4.3 Add `NETLIFY_ENCRYPTION_KEY` to environment
-- [ ] 4.4 Create encryption utility in `netlify/functions/lib/encryption.ts`
+- [x] 4.4 Create encryption utility in `netlify/functions/lib/encryption.ts`
 - [ ] 4.5 Create `src/pages/agent-chat/ToolsManagementPage.tsx`
 - [ ] 4.6 Create `src/pages/agent-chat/components/ToolForm.tsx`
 - [ ] 4.7 Create `src/pages/agent-chat/components/McpServerForm.tsx`
