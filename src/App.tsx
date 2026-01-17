@@ -11,6 +11,7 @@ import FilesPage from './pages/files/FilesPage'
 import AdminPage from './pages/admin/AdminPage'
 import RagPreprocessingPage from './pages/rag/RagPreprocessingPage'
 import AgentManagementPage from './pages/agent-chat/AgentManagementPage'
+import ToolsManagementPage from './pages/agent-chat/ToolsManagementPage'
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
               <Route path="/files" element={<FilesPage />} />
               <Route path="/rag-preprocessing" element={<RagPreprocessingPage />} />
               <Route path="/agent-chat" element={<AgentManagementPage />} />
+              <Route path="/agent-chat/tools" element={<ToolsManagementPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>

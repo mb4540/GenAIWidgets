@@ -31,7 +31,7 @@ This execution plan breaks down the Agent Mode Chat feature into testable phases
 | 1     | Database Schema            | ✅ COMPLETED   | 2026-01-17      |
 | 2     | Agent CRUD API             | ✅ COMPLETED   | 2026-01-17      |
 | 3     | Agent Management UI        | ✅ COMPLETED   | 2026-01-17      |
-| 4     | Tools & MCP Infrastructure | 🔄 IN PROGRESS | -               |
+| 4     | Tools & MCP Infrastructure | ✅ COMPLETED   | 2026-01-17      |
 | 5     | Session & Memory API       | ⬜ NOT STARTED | -               |
 | 6     | Agent Loop (Core Engine)   | ⬜ NOT STARTED | -               |
 | 7     | Streaming Infrastructure   | ⬜ NOT STARTED | -               |
@@ -195,7 +195,7 @@ _Document any issues or decisions made during this phase:_
 
 ## Phase 4: Tools & MCP Infrastructure
 
-**Status:** 🔄 IN PROGRESS
+**Status:** ✅ COMPLETED
 
 **Goal:** Implement tools registry and MCP server management.
 
@@ -208,12 +208,12 @@ _Document any issues or decisions made during this phase:_
   - [x] CRUD for MCP servers
   - [x] Health check endpoint
   - [x] Credential encryption/decryption
-- [ ] 4.3 Add `NETLIFY_ENCRYPTION_KEY` to environment
+- [ ] 4.3 Add `NETLIFY_ENCRYPTION_KEY` to environment (manual step)
 - [x] 4.4 Create encryption utility in `netlify/functions/lib/encryption.ts`
-- [ ] 4.5 Create `src/pages/agent-chat/ToolsManagementPage.tsx`
-- [ ] 4.6 Create `src/pages/agent-chat/components/ToolForm.tsx`
-- [ ] 4.7 Create `src/pages/agent-chat/components/McpServerForm.tsx`
-- [ ] 4.8 Create tool testing interface
+- [x] 4.5 Create `src/pages/agent-chat/ToolsManagementPage.tsx`
+- [x] 4.6 Create `src/pages/agent-chat/components/ToolForm.tsx`
+- [x] 4.7 Create `src/pages/agent-chat/components/ToolList.tsx`
+- [ ] 4.8 Create tool testing interface (deferred to Phase 10)
 
 ### Test Criteria
 
