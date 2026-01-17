@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link } from 'react-router-dom';
-import { Bot, Plus, Info, Wrench } from 'lucide-react';
+import { Bot, Plus, Info } from 'lucide-react';
 import PageInfoModal, { type PageInfoContent } from '@/components/common/PageInfoModal';
 import AgentList from './components/AgentList';
 import AgentForm from './components/AgentForm';
@@ -157,12 +156,6 @@ export default function AgentManagementPage(): React.ReactElement {
           >
             <Info className="h-5 w-5" />
           </button>
-          <Link
-            to="/agent-chat/tools"
-            className="flex items-center gap-2 bg-muted text-muted-foreground px-4 py-2 rounded-md text-sm hover:bg-muted/80"
-          >
-            <Wrench className="h-4 w-4" /> Manage Tools
-          </Link>
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90"

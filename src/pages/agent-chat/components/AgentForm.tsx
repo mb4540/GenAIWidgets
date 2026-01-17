@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import type { Agent, AgentInput, ModelProvider } from '@/types/agent';
-import { AVAILABLE_MODELS, DEFAULT_MODELS } from '@/components/common/ModelSelector';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Zap } from 'lucide-react';
+import type { Agent, AgentInput, AgentTool, ModelProvider } from '@/types/agent';
+import { AVAILABLE_MODELS } from '@/components/common/ModelSelector';
 
 interface AgentFormProps {
   agent?: Agent;
@@ -35,6 +35,7 @@ export default function AgentForm({
   onSubmit,
   onCancel,
 }: AgentFormProps): React.ReactElement {
+  const [activeTab, setActiveTab] = useState<'agent' | 'tools'>('agent');
   const [name, setName] = useState(agent?.name || '');
   const [description, setDescription] = useState(agent?.description || '');
   const [goal, setGoal] = useState(agent?.goal || '');
@@ -47,6 +48,18 @@ export default function AgentForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [availableTools, setAvailableTools] = useState<AgentTool[]>([]);
+  const [assignedToolIds, setAssignedToolIds] = useState<Set<string>>(new Set());
+  const [loadingTools, setLoadingTools] = useState(false);
+
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem('auth_token');
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+  }, []);
+
   useEffect(() => {
     if (!MODEL_OPTIONS[modelProvider].includes(modelName)) {
       const defaultModel = MODEL_OPTIONS[modelProvider][0];
@@ -55,6 +68,60 @@ export default function AgentForm({
       }
     }
   }, [modelProvider, modelName]);
+
+  useEffect(() => {
+    if (agent) {
+      const fetchToolsAndAssignments = async () => {
+        setLoadingTools(true);
+        try {
+          const [toolsRes, assignedRes] = await Promise.all([
+            fetch('/api/agent-tools', { headers: getAuthHeaders() }),
+            fetch(`/api/agent-tools?action=assigned&agentId=${agent.agent_id}`, { headers: getAuthHeaders() }),
+          ]);
+          const toolsData = await toolsRes.json() as { success: boolean; tools?: AgentTool[] };
+          const assignedData = await assignedRes.json() as { success: boolean; tools?: AgentTool[] };
+          
+          if (toolsData.success && toolsData.tools) {
+            setAvailableTools(toolsData.tools);
+          }
+          if (assignedData.success && assignedData.tools) {
+            setAssignedToolIds(new Set(assignedData.tools.map(t => t.tool_id)));
+          }
+        } catch {
+          console.error('Failed to fetch tools');
+        } finally {
+          setLoadingTools(false);
+        }
+      };
+      void fetchToolsAndAssignments();
+    }
+  }, [agent, getAuthHeaders]);
+
+  const handleToggleTool = async (toolId: string) => {
+    if (!agent) return;
+    const isAssigned = assignedToolIds.has(toolId);
+    const method = isAssigned ? 'DELETE' : 'POST';
+    
+    try {
+      const response = await fetch(
+        `/api/agent-tools?action=assign&agentId=${agent.agent_id}&toolId=${toolId}`,
+        { method, headers: getAuthHeaders() }
+      );
+      if (response.ok) {
+        setAssignedToolIds(prev => {
+          const next = new Set(prev);
+          if (isAssigned) {
+            next.delete(toolId);
+          } else {
+            next.add(toolId);
+          }
+          return next;
+        });
+      }
+    } catch {
+      console.error('Failed to toggle tool assignment');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -108,6 +175,81 @@ export default function AgentForm({
           </button>
         </div>
 
+        {agent && (
+          <div className="flex border-b border-border">
+            <button
+              type="button"
+              onClick={() => setActiveTab('agent')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'agent'
+                  ? 'border-b-2 border-primary text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Agent
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('tools')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'tools'
+                  ? 'border-b-2 border-primary text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Tools ({assignedToolIds.size})
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'tools' && agent ? (
+          <div className="p-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Select tools this agent can use. Assigned tools will be available during chat.
+            </p>
+            {loadingTools ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : availableTools.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No tools available. Create tools first from Agent Tools.</p>
+            ) : (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {availableTools.map((tool) => (
+                  <button
+                    key={tool.tool_id}
+                    type="button"
+                    onClick={() => void handleToggleTool(tool.tool_id)}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                      assignedToolIds.has(tool.tool_id)
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <div className="font-medium">{tool.name}</div>
+                      <div className="text-xs text-muted-foreground line-clamp-1">{tool.description}</div>
+                    </div>
+                    {assignedToolIds.has(tool.tool_id) && (
+                      <div className="text-primary">
+                        <Zap className="h-5 w-5" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="p-4 space-y-4">
           {error && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
@@ -264,6 +406,7 @@ export default function AgentForm({
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
