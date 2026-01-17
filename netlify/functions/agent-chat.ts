@@ -53,6 +53,10 @@ interface ToolRow {
 // Map of builtin tool names to their API endpoints
 const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
   get_weather: '/api/tools/weather',
+  list_files: '/api/tools/files',
+  read_file: '/api/tools/files',
+  create_file: '/api/tools/files',
+  delete_file: '/api/tools/files',
 };
 
 async function executeToolCall(
@@ -82,6 +86,18 @@ async function executeToolCall(
 
     try {
       const toolInput = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+      
+      // For file tools, add the action based on tool name
+      const fileToolActions: Record<string, string> = {
+        list_files: 'list',
+        read_file: 'read',
+        create_file: 'create',
+        delete_file: 'delete',
+      };
+      if (fileToolActions[toolName]) {
+        toolInput.action = fileToolActions[toolName];
+      }
+      
       const baseUrl = process.env.URL || 'http://localhost:8888';
       
       const response = await fetch(`${baseUrl}${endpoint}`, {
