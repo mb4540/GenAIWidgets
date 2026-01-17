@@ -154,6 +154,42 @@
   to = "/.netlify/functions/dashboard-stats"
   status = 200
 
+# Agent Mode API
+[[redirects]]
+  from = "/api/agents"
+  to = "/.netlify/functions/agents"
+  status = 200
+
+[[redirects]]
+  from = "/api/agent-tools"
+  to = "/.netlify/functions/agent-tools"
+  status = 200
+
+[[redirects]]
+  from = "/api/mcp-servers"
+  to = "/.netlify/functions/mcp-servers"
+  status = 200
+
+[[redirects]]
+  from = "/api/agent-sessions"
+  to = "/.netlify/functions/agent-sessions"
+  status = 200
+
+[[redirects]]
+  from = "/api/agent-memories"
+  to = "/.netlify/functions/agent-memories"
+  status = 200
+
+[[redirects]]
+  from = "/api/agent-chat"
+  to = "/.netlify/functions/agent-chat"
+  status = 200
+
+[[redirects]]
+  from = "/api/agent-loop"
+  to = "/.netlify/functions/agent-loop-background"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
