@@ -233,8 +233,8 @@ export default async function handler(req: Request, _context: Context): Promise<
           const folderName = folderPath.substring(folderPath.lastIndexOf('/') + 1);
           
           await sql`
-            INSERT INTO folders (tenant_id, folder_name, folder_path, parent_path)
-            VALUES (${tenantId}, ${folderName}, ${folderPath}, ${parentPath})
+            INSERT INTO folders (tenant_id, user_id, folder_name, folder_path, parent_path)
+            VALUES (${tenantId}, ${userId}, ${folderName}, ${folderPath}, ${parentPath})
           `;
         }
       }
