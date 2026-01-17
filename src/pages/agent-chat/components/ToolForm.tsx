@@ -19,6 +19,7 @@ export default function ToolForm({
   onSubmit,
   onCancel,
 }: ToolFormProps): React.ReactElement {
+  const isBuiltin = tool?.tool_type === 'builtin';
   const [name, setName] = useState(tool?.name || '');
   const [description, setDescription] = useState(tool?.description || '');
   const [toolType, setToolType] = useState<ToolType>(tool?.tool_type || 'mcp_server');
@@ -97,6 +98,7 @@ export default function ToolForm({
               placeholder="get_weather"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
               required
+              disabled={isBuiltin}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Function name that the LLM will use to call this tool
@@ -111,6 +113,7 @@ export default function ToolForm({
               placeholder="Get the current weather for a given location"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px]"
               required
+              disabled={isBuiltin}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Clear description helps the LLM understand when to use this tool
@@ -123,10 +126,17 @@ export default function ToolForm({
               value={toolType}
               onChange={(e) => setToolType(e.target.value as ToolType)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              disabled={isBuiltin}
             >
+              <option value="builtin">Builtin (System)</option>
               <option value="mcp_server">MCP Server</option>
               <option value="python_script" disabled>Python Script (Coming Soon)</option>
             </select>
+            {isBuiltin && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                Builtin tools are system-provided and cannot be modified
+              </p>
+            )}
           </div>
 
           <div>
@@ -136,6 +146,7 @@ export default function ToolForm({
               onChange={(e) => setInputSchema(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[200px] font-mono text-xs"
               required
+              disabled={isBuiltin}
             />
             <p className="text-xs text-muted-foreground mt-1">
               JSON Schema defining the parameters this tool accepts
@@ -149,6 +160,7 @@ export default function ToolForm({
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
               className="rounded border-input"
+              disabled={isBuiltin}
             />
             <label htmlFor="isActive" className="text-sm">
               Tool is active and available for use
@@ -164,13 +176,15 @@ export default function ToolForm({
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
-              disabled={submitting}
-            >
-              {submitting ? 'Saving...' : tool ? 'Update Tool' : 'Create Tool'}
-            </button>
+            {!isBuiltin && (
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 disabled:opacity-50"
+                disabled={submitting}
+              >
+                {submitting ? 'Saving...' : tool ? 'Update Tool' : 'Create Tool'}
+              </button>
+            )}
           </div>
         </form>
       </div>

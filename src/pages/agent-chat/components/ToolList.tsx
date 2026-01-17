@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Wrench, Trash2, Pencil, Server, Code, Zap, ZapOff, Link2, X } from 'lucide-react';
+import { Wrench, Trash2, Pencil, Server, Code, Zap, ZapOff, Link2, X, Cog } from 'lucide-react';
 import type { AgentTool, Agent } from '@/types/agent';
 
 interface ToolListProps {
@@ -100,6 +100,8 @@ export default function ToolList({
 
   const getToolTypeIcon = (toolType: string): React.ReactElement => {
     switch (toolType) {
+      case 'builtin':
+        return <Cog className="h-4 w-4" />;
       case 'mcp_server':
         return <Server className="h-4 w-4" />;
       case 'python_script':
@@ -111,12 +113,27 @@ export default function ToolList({
 
   const getToolTypeBadgeColor = (toolType: string): string => {
     switch (toolType) {
+      case 'builtin':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
       case 'mcp_server':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
       case 'python_script':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  const getToolTypeLabel = (toolType: string): string => {
+    switch (toolType) {
+      case 'builtin':
+        return 'System';
+      case 'mcp_server':
+        return 'MCP Server';
+      case 'python_script':
+        return 'Python Script';
+      default:
+        return toolType;
     }
   };
 
@@ -173,7 +190,7 @@ export default function ToolList({
             <div className="flex items-center gap-2 mb-4">
               <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${getToolTypeBadgeColor(tool.tool_type)}`}>
                 {getToolTypeIcon(tool.tool_type)}
-                {tool.tool_type === 'mcp_server' ? 'MCP Server' : 'Python Script'}
+                {getToolTypeLabel(tool.tool_type)}
               </span>
             </div>
 
@@ -191,20 +208,33 @@ export default function ToolList({
                 >
                   <Link2 className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={() => onEdit(tool)}
-                  className="p-1.5 text-muted-foreground hover:text-foreground"
-                  title="Edit tool"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => void onDelete(tool.tool_id)}
-                  className="p-1.5 text-muted-foreground hover:text-destructive"
-                  title="Delete tool"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {tool.tool_type !== 'builtin' && (
+                  <>
+                    <button
+                      onClick={() => onEdit(tool)}
+                      className="p-1.5 text-muted-foreground hover:text-foreground"
+                      title="Edit tool"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => void onDelete(tool.tool_id)}
+                      className="p-1.5 text-muted-foreground hover:text-destructive"
+                      title="Delete tool"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+                {tool.tool_type === 'builtin' && (
+                  <button
+                    onClick={() => onEdit(tool)}
+                    className="p-1.5 text-muted-foreground hover:text-foreground"
+                    title="View tool details"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
