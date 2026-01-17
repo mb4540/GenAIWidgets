@@ -32,7 +32,7 @@ This execution plan breaks down the Agent Mode Chat feature into testable phases
 | 2     | Agent CRUD API             | ✅ COMPLETED   | 2026-01-17      |
 | 3     | Agent Management UI        | ✅ COMPLETED   | 2026-01-17      |
 | 4     | Tools & MCP Infrastructure | ✅ COMPLETED   | 2026-01-17      |
-| 5     | Session & Memory API       | ⬜ NOT STARTED | -               |
+| 5     | Session & Memory API       | ✅ COMPLETED   | 2026-01-17      |
 | 6     | Agent Loop (Core Engine)   | ⬜ NOT STARTED | -               |
 | 7     | Streaming Infrastructure   | ⬜ NOT STARTED | -               |
 | 8     | Chat Interface UI          | ⬜ NOT STARTED | -               |
@@ -241,26 +241,26 @@ _Document any issues or decisions made during this phase:_
 
 ## Phase 5: Session & Memory API
 
-**Status:** ⬜ NOT STARTED
+**Status:** ✅ COMPLETED
 
 **Goal:** Implement session management and long-term memory APIs.
 
 ### Tasks
 
-- [ ] 5.1 Create `netlify/functions/agent-sessions.ts`
-  - [ ] GET `/api/agents/:id/sessions` - List sessions
-  - [ ] GET `/api/agent-sessions/:id` - Get session with messages
-  - [ ] POST `/api/agents/:id/sessions` - Start new session
-  - [ ] POST `/api/agent-sessions/:id/cancel` - Cancel session
-  - [ ] DELETE `/api/agent-sessions/:id` - Delete session
-  - [ ] GET `/api/agent-sessions/:id/status` - Poll status
-- [ ] 5.2 Create `netlify/functions/agent-memories.ts`
-  - [ ] GET `/api/agents/:id/memories` - List memories
-  - [ ] POST `/api/agents/:id/memories` - Add memory
-  - [ ] PUT `/api/agent-memories/:id` - Update memory
-  - [ ] DELETE `/api/agent-memories/:id` - Delete memory
-- [ ] 5.3 Add session message storage logic
-- [ ] 5.4 Add memory retrieval by relevance (basic)
+- [x] 5.1 Create `netlify/functions/agent-sessions.ts`
+  - [x] GET `/api/agent-sessions?agentId=xxx` - List sessions
+  - [x] GET `/api/agent-sessions?id=xxx` - Get session with messages
+  - [x] POST `/api/agent-sessions?agentId=xxx` - Start new session
+  - [x] POST `/api/agent-sessions?id=xxx&action=cancel` - Cancel session
+  - [x] DELETE `/api/agent-sessions?id=xxx` - Delete session
+  - [x] GET `/api/agent-sessions?id=xxx&action=status` - Poll status
+- [x] 5.2 Create `netlify/functions/agent-memories.ts`
+  - [x] GET `/api/agent-memories?agentId=xxx` - List memories
+  - [x] POST `/api/agent-memories?agentId=xxx` - Add memory
+  - [x] PUT `/api/agent-memories?id=xxx` - Update memory
+  - [x] DELETE `/api/agent-memories?id=xxx` - Delete memory
+- [x] 5.3 Add session message storage logic (in agent-sessions.ts)
+- [x] 5.4 Add memory retrieval by importance (basic ordering)
 
 ### Test Criteria
 
