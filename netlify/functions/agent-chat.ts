@@ -313,10 +313,17 @@ export default async function handler(req: Request, _context: Context): Promise<
         
         // Save tool result to database
         currentStep++;
+        // Parse arguments to ensure valid JSON, then stringify for safe insertion
+        let toolInput: Record<string, unknown> = {};
+        try {
+          toolInput = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+        } catch {
+          toolInput = { raw: toolCall.function.arguments };
+        }
         await sql`
           INSERT INTO agent_session_messages (session_id, step_number, role, content, tool_name, tool_input, tool_output)
           VALUES (${sessionId}, ${currentStep}, 'tool', ${toolResult.result}, ${toolCall.function.name}, 
-                  ${toolCall.function.arguments}::jsonb, ${JSON.stringify({ success: toolResult.success, result: toolResult.result })}::jsonb)
+                  ${JSON.stringify(toolInput)}::jsonb, ${JSON.stringify({ success: toolResult.success, result: toolResult.result })}::jsonb)
         `;
 
         // Add tool result to conversation
