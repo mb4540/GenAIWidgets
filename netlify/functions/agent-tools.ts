@@ -114,7 +114,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
   const sql = neon(DATABASE_URL);
   const url = new URL(req.url);
-  const toolId = url.searchParams.get('id');
+  const toolId = url.searchParams.get('id') || url.searchParams.get('toolId');
   const agentId = url.searchParams.get('agentId');
   const action = url.searchParams.get('action');
 
@@ -186,6 +186,8 @@ export default async function handler(req: Request, _context: Context): Promise<
 
         return createSuccessResponse({ deleted: true });
       }
+
+      return createErrorResponse('Method not allowed for assign action', 405);
     }
 
     // Get tools assigned to an agent
