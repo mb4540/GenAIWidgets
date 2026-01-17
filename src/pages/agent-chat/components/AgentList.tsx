@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Bot, Trash2, Pencil, Eye, Zap, ZapOff } from 'lucide-react';
+import { Bot, Trash2, Pencil, Eye, Zap, ZapOff, MessageSquare, Brain } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { Agent } from '@/types/agent';
 
 interface AgentListProps {
@@ -108,8 +109,19 @@ export default function AgentList({
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-border">
-              <div className="text-xs text-muted-foreground">
-                Max {agent.max_steps} steps • Temp {agent.temperature}
+              <div className="flex items-center gap-2">
+                <Link
+                  to={`/agent-chat/chat?agentId=${agent.agent_id}`}
+                  className="flex items-center gap-1 px-2 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/90"
+                >
+                  <MessageSquare className="h-3 w-3" /> Chat
+                </Link>
+                <Link
+                  to={`/agent-chat/memories?agentId=${agent.agent_id}`}
+                  className="flex items-center gap-1 px-2 py-1 bg-muted text-muted-foreground rounded text-xs hover:bg-muted/80"
+                >
+                  <Brain className="h-3 w-3" /> Memories
+                </Link>
               </div>
               <div className="flex items-center gap-1">
                 <button
