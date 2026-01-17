@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Agent, AgentInput, ModelProvider } from '@/types/agent';
+import { AVAILABLE_MODELS, DEFAULT_MODELS } from '@/components/common/ModelSelector';
 
 interface AgentFormProps {
   agent?: Agent;
@@ -8,10 +9,25 @@ interface AgentFormProps {
   onCancel: () => void;
 }
 
+// Map ModelProvider to ModelSelector provider keys
+const PROVIDER_MAP: Record<ModelProvider, 'openai' | 'anthropic' | 'google'> = {
+  openai: 'openai',
+  anthropic: 'anthropic',
+  gemini: 'google',
+};
+
+// Get model IDs from the shared AVAILABLE_MODELS
 const MODEL_OPTIONS: Record<ModelProvider, string[]> = {
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-  anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
-  gemini: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash-exp'],
+  openai: AVAILABLE_MODELS.openai.map((m) => m.id),
+  anthropic: AVAILABLE_MODELS.anthropic.map((m) => m.id),
+  gemini: AVAILABLE_MODELS.google.map((m) => m.id),
+};
+
+// Get display names for models
+const MODEL_NAMES: Record<string, string> = {
+  ...Object.fromEntries(AVAILABLE_MODELS.openai.map((m) => [m.id, m.name])),
+  ...Object.fromEntries(AVAILABLE_MODELS.anthropic.map((m) => [m.id, m.name])),
+  ...Object.fromEntries(AVAILABLE_MODELS.google.map((m) => [m.id, m.name])),
 };
 
 export default function AgentForm({
@@ -173,7 +189,7 @@ export default function AgentForm({
               >
                 {MODEL_OPTIONS[modelProvider].map((model) => (
                   <option key={model} value={model}>
-                    {model}
+                    {MODEL_NAMES[model] || model}
                   </option>
                 ))}
               </select>
