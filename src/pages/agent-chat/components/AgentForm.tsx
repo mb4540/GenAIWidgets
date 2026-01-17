@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Zap } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import type { Agent, AgentInput, AgentTool, ModelProvider } from '@/types/agent';
 import { AVAILABLE_MODELS } from '@/components/common/ModelSelector';
 
@@ -215,28 +215,34 @@ export default function AgentForm({
               <p className="text-center text-muted-foreground py-8">No tools available. Create tools first from Agent Tools.</p>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {availableTools.map((tool) => (
-                  <button
-                    key={tool.tool_id}
-                    type="button"
-                    onClick={() => void handleToggleTool(tool.tool_id)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                      assignedToolIds.has(tool.tool_id)
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <div className="text-left">
-                      <div className="font-medium">{tool.name}</div>
-                      <div className="text-xs text-muted-foreground line-clamp-1">{tool.description}</div>
-                    </div>
-                    {assignedToolIds.has(tool.tool_id) && (
-                      <div className="text-primary">
-                        <Zap className="h-5 w-5" />
+                {availableTools.map((tool) => {
+                  const isAssigned = assignedToolIds.has(tool.tool_id);
+                  return (
+                    <label
+                      key={tool.tool_id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        isAssigned
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div
+                        className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                          isAssigned
+                            ? 'bg-primary border-primary'
+                            : 'border-muted-foreground'
+                        }`}
+                        onClick={() => void handleToggleTool(tool.tool_id)}
+                      >
+                        {isAssigned && <Check className="h-3 w-3 text-primary-foreground" />}
                       </div>
-                    )}
-                  </button>
-                ))}
+                      <div className="flex-1 min-w-0" onClick={() => void handleToggleTool(tool.tool_id)}>
+                        <div className="font-medium">{tool.name}</div>
+                        <div className="text-xs text-muted-foreground line-clamp-1">{tool.description}</div>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             )}
             <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-border">
