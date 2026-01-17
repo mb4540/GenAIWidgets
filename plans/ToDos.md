@@ -55,3 +55,12 @@
 - [ ] Add tests for admin tab components (MembershipsTab, PromptsTab, TenantsTab, UsersTab)
 - [ ] Add tests for FilesPage.tsx (currently 38% coverage)
 
+## Agent File Tools
+
+- [ ] Debug create_file tool error - still failing after user_id fix (2026-01-17)
+  - Check Netlify function logs for `tool-files` to see actual error message
+  - Test the `/api/tools/files` endpoint directly with curl/Postman
+  - Verify the agent is passing correct parameters (file_path, content)
+  - Check if blob storage is working correctly
+  - Add more detailed error logging to tool-files.ts
+
