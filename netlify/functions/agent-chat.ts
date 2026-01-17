@@ -46,7 +46,87 @@ interface MemoryRow {
 interface ToolRow {
   name: string;
   description: string;
+  tool_type: string;
   input_schema: Record<string, unknown>;
+}
+
+// Map of builtin tool names to their API endpoints
+const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
+  get_weather: '/api/tools/weather',
+};
+
+async function executeToolCall(
+  toolCall: ToolCall,
+  tools: ToolRow[],
+  authToken: string
+): Promise<{ success: boolean; result: string }> {
+  const toolName = toolCall.function.name;
+  const tool = tools.find(t => t.name === toolName);
+  
+  if (!tool) {
+    return {
+      success: false,
+      result: `Tool not found: ${toolName}`,
+    };
+  }
+
+  // Handle builtin tools
+  if (tool.tool_type === 'builtin') {
+    const endpoint = BUILTIN_TOOL_ENDPOINTS[toolName];
+    if (!endpoint) {
+      return {
+        success: false,
+        result: `Builtin tool endpoint not configured: ${toolName}`,
+      };
+    }
+
+    try {
+      const toolInput = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+      const baseUrl = process.env.URL || 'http://localhost:8888';
+      
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(toolInput),
+      });
+
+      const data = await response.json() as { success: boolean; result?: unknown; error?: string };
+      
+      if (data.success && data.result) {
+        return {
+          success: true,
+          result: JSON.stringify(data.result, null, 2),
+        };
+      } else {
+        return {
+          success: false,
+          result: data.error || 'Tool execution failed',
+        };
+      }
+    } catch (error) {
+      console.error(`[executeToolCall] Builtin tool error:`, error);
+      return {
+        success: false,
+        result: `Tool execution error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  // Handle MCP server tools (future implementation)
+  if (tool.tool_type === 'mcp_server') {
+    return {
+      success: false,
+      result: 'MCP server tool execution not yet implemented.',
+    };
+  }
+
+  return {
+    success: false,
+    result: `Unsupported tool type: ${tool.tool_type}`,
+  };
 }
 
 function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[]): string {
@@ -138,7 +218,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
     // Get tools
     const tools = await sql`
-      SELECT t.name, t.description, t.input_schema
+      SELECT t.name, t.description, t.tool_type, t.input_schema
       FROM agent_tools t
       JOIN agent_tool_assignments a ON t.tool_id = a.tool_id
       WHERE a.agent_id = ${agent.agent_id} AND t.is_active = true
@@ -214,16 +294,80 @@ export default async function handler(req: Request, _context: Context): Promise<
       `;
     }
 
-    // Handle tool calls if present
-    const toolResults: Array<{ name: string; result: string }> = [];
+    // Handle tool calls if present - execute tools and get final response
     if (llmResponse.tool_calls && llmResponse.tool_calls.length > 0) {
+      // Extract auth token for tool calls
+      const authHeader = req.headers.get('Authorization') || '';
+      const authToken = authHeader.replace('Bearer ', '');
+
+      // Add assistant message with tool calls to conversation
+      conversationMessages.push({
+        role: 'assistant',
+        content: assistantContent,
+        tool_calls: llmResponse.tool_calls,
+      });
+
+      // Execute each tool and collect results
       for (const toolCall of llmResponse.tool_calls) {
-        // For now, return placeholder - MCP execution will be added later
-        toolResults.push({
-          name: toolCall.function.name,
-          result: 'Tool execution pending MCP integration',
+        const toolResult = await executeToolCall(toolCall, tools, authToken);
+        
+        // Save tool result to database
+        currentStep++;
+        await sql`
+          INSERT INTO agent_session_messages (session_id, step_number, role, content, tool_name, tool_input, tool_output)
+          VALUES (${sessionId}, ${currentStep}, 'tool', ${toolResult.result}, ${toolCall.function.name}, 
+                  ${toolCall.function.arguments}::jsonb, ${JSON.stringify({ success: toolResult.success, result: toolResult.result })}::jsonb)
+        `;
+
+        // Add tool result to conversation
+        conversationMessages.push({
+          role: 'tool',
+          content: toolResult.result,
+          tool_call_id: toolCall.id,
         });
       }
+
+      // Make second LLM call with tool results
+      const finalResponse = await callLLM(conversationMessages, toolDefinitions, {
+        provider: agent.model_provider as ModelProvider,
+        model: agent.model_name,
+        temperature: parseFloat(agent.temperature),
+      });
+
+      // Save final assistant response
+      currentStep++;
+      const finalContent = finalResponse.content || '';
+      await sql`
+        INSERT INTO agent_session_messages (session_id, step_number, role, content, tokens_used)
+        VALUES (${sessionId}, ${currentStep}, 'assistant', ${finalContent}, ${finalResponse.tokens_used})
+      `;
+
+      // Check for goal completion
+      const finalGoalMet = finalContent.startsWith('GOAL_COMPLETE');
+      if (finalGoalMet) {
+        await sql`
+          UPDATE agent_sessions 
+          SET status = 'completed', goal_met = true, current_step = ${currentStep}, ended_at = now()
+          WHERE session_id = ${sessionId}
+        `;
+      } else {
+        await sql`
+          UPDATE agent_sessions SET current_step = ${currentStep} WHERE session_id = ${sessionId}
+        `;
+      }
+
+      return createSuccessResponse({
+        message: {
+          role: 'assistant',
+          content: finalContent,
+          tokens_used: (llmResponse.tokens_used || 0) + (finalResponse.tokens_used || 0),
+        },
+        session: {
+          status: finalGoalMet ? 'completed' : 'active',
+          current_step: currentStep,
+          goal_met: finalGoalMet,
+        },
+      });
     }
 
     return createSuccessResponse({
@@ -232,8 +376,6 @@ export default async function handler(req: Request, _context: Context): Promise<
         content: assistantContent,
         tokens_used: llmResponse.tokens_used,
       },
-      tool_calls: llmResponse.tool_calls,
-      tool_results: toolResults.length > 0 ? toolResults : null,
       session: {
         status: goalMet ? 'completed' : 'active',
         current_step: currentStep,
