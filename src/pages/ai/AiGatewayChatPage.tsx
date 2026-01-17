@@ -110,7 +110,10 @@ export default function AiGatewayChatPage() {
     <div className="flex h-screen flex-col">
       {/* Header */}
       <div className="border-b border-border p-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">AI Gateway Chat</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">AI Gateway Chat</h1>
+          <p className="text-muted-foreground">Compare responses from multiple AI providers</p>
+        </div>
         <button
           onClick={() => setShowInfo(true)}
           className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"

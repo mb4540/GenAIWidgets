@@ -139,30 +139,32 @@ export default function AgentManagementPage(): React.ReactElement {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 space-y-6">
+      <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <Bot className="h-8 w-8 text-primary" />
+          <Bot className="h-6 w-6" />
           <div>
-            <h1 className="text-2xl font-bold">Agent Management</h1>
+            <h1 className="text-2xl font-bold text-foreground">Agent Management</h1>
             <p className="text-muted-foreground">Create and configure AI agents</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowInfo(true)}
-            className="p-2 text-muted-foreground hover:text-foreground"
-            title="Page info"
-          >
-            <Info className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" /> New Agent
-          </button>
-        </div>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+          title="View technical documentation"
+        >
+          <Info className="h-4 w-4" />
+          <span>Details</span>
+        </button>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm hover:bg-primary/90"
+        >
+          <Plus className="h-4 w-4" /> New Agent
+        </button>
       </div>
 
       {error && (
