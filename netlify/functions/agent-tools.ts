@@ -194,6 +194,17 @@ export default async function handler(req: Request, _context: Context): Promise<
       return createSuccessResponse({ tools: tools.map(mapRowToTool) });
     }
 
+    // Get agents that a tool is assigned to
+    if (action === 'assignments' && toolId) {
+      const agents = await sql`
+        SELECT a.agent_id FROM agent_tool_assignments a
+        JOIN agent_tools t ON a.tool_id = t.tool_id
+        WHERE a.tool_id = ${toolId} AND (t.tenant_id = ${tenantId} OR ${isAdmin})
+      ` as Array<{ agent_id: string }>;
+
+      return createSuccessResponse({ agents });
+    }
+
     // GET /api/agent-tools - List all tools
     // GET /api/agent-tools?id=xxx - Get single tool
     if (req.method === 'GET') {

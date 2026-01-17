@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Wrench, Trash2, Pencil, Server, Code, Zap, ZapOff } from 'lucide-react';
-import type { AgentTool } from '@/types/agent';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Wrench, Trash2, Pencil, Server, Code, Zap, ZapOff, Link2, X } from 'lucide-react';
+import type { AgentTool, Agent } from '@/types/agent';
 
 interface ToolListProps {
   tools: AgentTool[];
@@ -14,6 +14,79 @@ export default function ToolList({
   onDelete,
 }: ToolListProps): React.ReactElement {
   const [searchQuery, setSearchQuery] = useState('');
+  const [assigningTool, setAssigningTool] = useState<AgentTool | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [assignedAgentIds, setAssignedAgentIds] = useState<Set<string>>(new Set());
+  const [loadingAgents, setLoadingAgents] = useState(false);
+
+  const getAuthHeaders = useCallback(() => {
+    const token = localStorage.getItem('auth_token');
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
+  }, []);
+
+  const fetchAgentsAndAssignments = useCallback(async (toolId: string) => {
+    setLoadingAgents(true);
+    try {
+      const [agentsRes, assignedRes] = await Promise.all([
+        fetch('/api/agents', { headers: getAuthHeaders() }),
+        fetch(`/api/agent-tools?action=assignments&toolId=${toolId}`, { headers: getAuthHeaders() }),
+      ]);
+      const agentsData = await agentsRes.json() as { success: boolean; agents?: Agent[] };
+      const assignedData = await assignedRes.json() as { success: boolean; agents?: Array<{ agent_id: string }> };
+      
+      if (agentsData.success && agentsData.agents) {
+        setAgents(agentsData.agents);
+      }
+      if (assignedData.success && assignedData.agents) {
+        setAssignedAgentIds(new Set(assignedData.agents.map(a => a.agent_id)));
+      }
+    } catch {
+      console.error('Failed to fetch agents');
+    } finally {
+      setLoadingAgents(false);
+    }
+  }, [getAuthHeaders]);
+
+  const handleOpenAssign = (tool: AgentTool) => {
+    setAssigningTool(tool);
+    void fetchAgentsAndAssignments(tool.tool_id);
+  };
+
+  const handleToggleAssignment = async (agentId: string) => {
+    if (!assigningTool) return;
+    const isAssigned = assignedAgentIds.has(agentId);
+    const method = isAssigned ? 'DELETE' : 'POST';
+    
+    try {
+      const response = await fetch(
+        `/api/agent-tools?action=assign&agentId=${agentId}&toolId=${assigningTool.tool_id}`,
+        { method, headers: getAuthHeaders() }
+      );
+      if (response.ok) {
+        setAssignedAgentIds(prev => {
+          const next = new Set(prev);
+          if (isAssigned) {
+            next.delete(agentId);
+          } else {
+            next.add(agentId);
+          }
+          return next;
+        });
+      }
+    } catch {
+      console.error('Failed to toggle assignment');
+    }
+  };
+
+  useEffect(() => {
+    if (!assigningTool) {
+      setAgents([]);
+      setAssignedAgentIds(new Set());
+    }
+  }, [assigningTool]);
 
   const filteredTools = useMemo(() => {
     if (!searchQuery.trim()) return tools;
@@ -112,6 +185,13 @@ export default function ToolList({
               </div>
               <div className="flex items-center gap-1">
                 <button
+                  onClick={() => handleOpenAssign(tool)}
+                  className="p-1.5 text-muted-foreground hover:text-primary"
+                  title="Assign to agents"
+                >
+                  <Link2 className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => onEdit(tool)}
                   className="p-1.5 text-muted-foreground hover:text-foreground"
                   title="Edit tool"
@@ -130,6 +210,63 @@ export default function ToolList({
           </div>
         ))}
       </div>
+
+      {assigningTool && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-lg w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-lg font-semibold">Assign "{assigningTool.name}" to Agents</h2>
+              <button
+                onClick={() => setAssigningTool(null)}
+                className="p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-4 max-h-96 overflow-y-auto">
+              {loadingAgents ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : agents.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No agents available. Create an agent first.</p>
+              ) : (
+                <div className="space-y-2">
+                  {agents.map((agent) => (
+                    <button
+                      key={agent.agent_id}
+                      onClick={() => void handleToggleAssignment(agent.agent_id)}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                        assignedAgentIds.has(agent.agent_id)
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="text-left">
+                        <div className="font-medium">{agent.name}</div>
+                        <div className="text-xs text-muted-foreground">{agent.model_provider} / {agent.model_name}</div>
+                      </div>
+                      {assignedAgentIds.has(agent.agent_id) && (
+                        <div className="text-primary">
+                          <Zap className="h-5 w-5" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-border">
+              <button
+                onClick={() => setAssigningTool(null)}
+                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
