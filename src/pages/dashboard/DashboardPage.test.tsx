@@ -28,34 +28,22 @@ describe('DashboardPage', () => {
       expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
     });
 
-    it('should render welcome message', () => {
+    it('should render welcome message with user name', () => {
       render(<DashboardPage />);
-      expect(screen.getByText('Welcome back!')).toBeInTheDocument();
-    });
-
-    it('should display user full name', () => {
-      render(<DashboardPage />);
+      expect(screen.getByText(/Welcome back,/)).toBeInTheDocument();
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
 
-    it('should display signed in message with user name', () => {
+    it('should display tenant info', () => {
       render(<DashboardPage />);
-      expect(screen.getByText(/You are signed in as/)).toBeInTheDocument();
-    });
-
-    it('should display tenant name', () => {
-      render(<DashboardPage />);
-      expect(screen.getByText('Acme Corp')).toBeInTheDocument();
-    });
-
-    it('should display tenant role', () => {
-      render(<DashboardPage />);
+      expect(screen.getByText(/Acme Corp/)).toBeInTheDocument();
       expect(screen.getByText(/member/)).toBeInTheDocument();
     });
 
-    it('should display organization label', () => {
+    it('should show loading state initially', () => {
       render(<DashboardPage />);
-      expect(screen.getByText(/Organization:/)).toBeInTheDocument();
+      // The dashboard shows a loading spinner while fetching stats
+      expect(document.querySelector('.animate-spin')).toBeInTheDocument();
     });
   });
 });

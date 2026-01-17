@@ -25,7 +25,7 @@ describe('AiGatewayChatPage', () => {
 
       expect(screen.getByLabelText('OpenAI')).toBeInTheDocument();
       expect(screen.getByLabelText('Anthropic')).toBeInTheDocument();
-      expect(screen.getByLabelText('Gemini')).toBeInTheDocument();
+      expect(screen.getByLabelText('Google')).toBeInTheDocument();
     });
 
     it('should render default model selections', () => {
@@ -33,7 +33,7 @@ describe('AiGatewayChatPage', () => {
 
       expect(screen.getByLabelText('OpenAI')).toHaveValue('gpt-4o-mini');
       expect(screen.getByLabelText('Anthropic')).toHaveValue('claude-3-haiku-20240307');
-      expect(screen.getByLabelText('Gemini')).toHaveValue('gemini-2.0-flash');
+      expect(screen.getByLabelText('Google')).toHaveValue('gemini-2.0-flash');
     });
 
     it('should render empty state message', () => {
@@ -72,14 +72,14 @@ describe('AiGatewayChatPage', () => {
       expect(anthropicSelect).toHaveValue('claude-3-5-haiku-20241022');
     });
 
-    it('should allow changing Gemini model', async () => {
+    it('should allow changing Google model', async () => {
       const user = userEvent.setup();
       render(<AiGatewayChatPage />);
 
-      const geminiSelect = screen.getByLabelText('Gemini');
-      await user.selectOptions(geminiSelect, 'gemini-2.5-pro');
+      const googleSelect = screen.getByLabelText('Google');
+      await user.selectOptions(googleSelect, 'gemini-2.5-pro');
 
-      expect(geminiSelect).toHaveValue('gemini-2.5-pro');
+      expect(googleSelect).toHaveValue('gemini-2.5-pro');
     });
   });
 
@@ -300,7 +300,7 @@ describe('AiGatewayChatPage', () => {
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
         expect(headings.map((h) => h.textContent)).toEqual(
-          expect.arrayContaining(['OpenAI', 'Anthropic', 'Gemini'])
+          expect.arrayContaining(['OpenAI', 'Anthropic', 'Google'])
         );
       });
     });
@@ -354,7 +354,7 @@ describe('AiGatewayChatPage', () => {
 
       expect(screen.getByLabelText('OpenAI')).toBeInTheDocument();
       expect(screen.getByLabelText('Anthropic')).toBeInTheDocument();
-      expect(screen.getByLabelText('Gemini')).toBeInTheDocument();
+      expect(screen.getByLabelText('Google')).toBeInTheDocument();
     });
 
     it('should have accessible input field', () => {

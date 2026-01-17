@@ -44,9 +44,9 @@
 
 ## Application Style Update
 
-- [ ] Implement Light/Dark mode with accessible toggle
-- [ ] Add colorful accents and define semantic color palette
-- [ ] Standardize iconography library (Lucide React) for consistent usage throughout application
+- [x] Implement Light/Dark mode with accessible toggle
+- [x] Add colorful accents and define semantic color palette
+- [x] Standardize iconography library (Lucide React) for consistent usage throughout application
 
 ## Test Coverage
 

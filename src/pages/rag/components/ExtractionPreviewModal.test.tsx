@@ -97,17 +97,17 @@ describe('ExtractionPreviewModal', () => {
       expect(screen.getByText('Some content may be missing')).toBeInTheDocument();
     });
 
-    it('should display page count', () => {
+    it('should display chunk count', () => {
       render(
         <ExtractionPreviewModal
           isOpen={true}
           onClose={vi.fn()}
           onAccept={vi.fn()}
           extractedContent={createMockContent({
-            pages: [
-              { pageNumber: 1, text: 'Page 1 content' },
-              { pageNumber: 2, text: 'Page 2 content' },
-              { pageNumber: 3, text: 'Page 3 content' },
+            chunks: [
+              { index: 1, text: 'Chunk 1' },
+              { index: 2, text: 'Chunk 2' },
+              { index: 3, text: 'Chunk 3' },
             ],
           })}
           fileName="test.pdf"
