@@ -29,7 +29,7 @@ This execution plan breaks down the Agent Mode Chat feature into testable phases
 | Phase | Name                       | Status         | Completion Date |
 |-------|----------------------------|----------------|-----------------|
 | 1     | Database Schema            | ✅ COMPLETED   | 2026-01-17      |
-| 2     | Agent CRUD API             | ⬜ NOT STARTED | -               |
+| 2     | Agent CRUD API             | ✅ COMPLETED   | 2026-01-17      |
 | 3     | Agent Management UI        | ⬜ NOT STARTED | -               |
 | 4     | Tools & MCP Infrastructure | ⬜ NOT STARTED | -               |
 | 5     | Session & Memory API       | ⬜ NOT STARTED | -               |
@@ -101,22 +101,22 @@ _Document any issues or decisions made during this phase:_
 
 ## Phase 2: Agent CRUD API
 
-**Status:** ⬜ NOT STARTED
+**Status:** ✅ COMPLETED
 
 **Goal:** Implement backend API for agent management.
 
 ### Tasks
 
-- [ ] 2.1 Create `netlify/functions/agents.ts`
-  - [ ] GET `/api/agents` - List agents for tenant
-  - [ ] GET `/api/agents/:id` - Get single agent
-  - [ ] POST `/api/agents` - Create agent
-  - [ ] PUT `/api/agents/:id` - Update agent
-  - [ ] DELETE `/api/agents/:id` - Delete agent
-- [ ] 2.2 Add authentication middleware
-- [ ] 2.3 Add input validation
-- [ ] 2.4 Add tenant isolation checks
-- [ ] 2.5 Create unit tests for agents API
+- [x] 2.1 Create `netlify/functions/agents.ts`
+  - [x] GET `/api/agents` - List agents for tenant
+  - [x] GET `/api/agents/:id` - Get single agent
+  - [x] POST `/api/agents` - Create agent
+  - [x] PUT `/api/agents/:id` - Update agent
+  - [x] DELETE `/api/agents/:id` - Delete agent
+- [x] 2.2 Add authentication middleware
+- [x] 2.3 Add input validation
+- [x] 2.4 Add tenant isolation checks
+- [x] 2.5 Create unit tests for agents API
 
 ### Test Criteria
 
