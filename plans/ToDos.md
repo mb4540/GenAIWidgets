@@ -42,9 +42,16 @@
   - Recent extraction activity
   - Q&A pairs generated (pending review/approved counts)
 
+## Application Style Update
+
+- [ ] Implement Light/Dark mode with accessible toggle
+- [ ] Add colorful accents and define semantic color palette
+- [ ] Standardize iconography library (Lucide React) for consistent usage throughout application
+
 ## Test Coverage
 
 - [ ] Add tests for FileViewerModal.tsx (currently 27% coverage)
 - [ ] Add tests for AdminPage.tsx (currently 45% coverage)
 - [ ] Add tests for admin tab components (MembershipsTab, PromptsTab, TenantsTab, UsersTab)
 - [ ] Add tests for FilesPage.tsx (currently 38% coverage)
+
