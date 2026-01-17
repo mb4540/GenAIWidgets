@@ -1084,71 +1084,103 @@ migrations/
 
 ## Open Questions
 
-### 1. Python Script Execution
+### 1. Python Script Execution ✅ DECIDED
 **Question:** How should we safely execute user-uploaded Python scripts?
 
-Options:
-- A) External service (AWS Lambda, Google Cloud Functions)
-- B) Containerized execution (Docker)
-- C) Third-party API (Judge0, Piston)
-- D) Pre-approved scripts only (no user uploads)
-- E) Defer Python support to later phase
+**Answer: E) Defer Python support to later phase**
 
-### 2. MCP Server Authentication
+Rationale: Netlify Functions run in Node.js—no native Python runtime. All other options require external services (costs) or complex sandboxing (maintenance). Focus on MCP servers for tools in v1. Revisit Python support in v2 if users request it.
+
+~~Options:~~
+- ~~A) External service (AWS Lambda, Google Cloud Functions)~~
+- ~~B) Containerized execution (Docker)~~
+- ~~C) Third-party API (Judge0, Piston)~~
+- ~~D) Pre-approved scripts only (no user uploads)~~
+- ~~E) Defer Python support to later phase~~
+
+### 2. MCP Server Authentication ✅ DECIDED
 **Question:** How should we store MCP server credentials securely?
 
-Options:
-- A) Encrypted in database (using Netlify environment secret as key)
-- B) Netlify environment variables per server
-- C) External secrets manager
+**Answer: A) Encrypted in database (using Netlify environment secret as key)**
 
-### 3. Memory Extraction
+Rationale: Allows dynamic addition of MCP servers via UI without redeploying. Credentials stored in `auth_config` JSONB column, encrypted using AES-256 with key from `NETLIFY_ENCRYPTION_KEY` env var.
+
+~~Options:~~
+- ~~A) Encrypted in database (using Netlify environment secret as key)~~
+- ~~B) Netlify environment variables per server~~
+- ~~C) External secrets manager~~
+
+### 3. Memory Extraction ✅ DECIDED
 **Question:** Should the agent automatically extract memories, or should users manually add them?
 
-Options:
-- A) Automatic extraction by LLM at end of session
-- B) User manually adds memories
-- C) Both (auto-suggest, user confirms)
+**Answer: C) Both (auto-suggest, user confirms)**
 
-### 4. Multi-Agent Support
+Rationale: Auto-extraction captures useful info without user effort, but user confirmation prevents noise/incorrect memories from polluting the knowledge base. At session end, LLM suggests memories; user reviews and approves/rejects each.
+
+~~Options:~~
+- ~~A) Automatic extraction by LLM at end of session~~
+- ~~B) User manually adds memories~~
+- ~~C) Both (auto-suggest, user confirms)~~
+
+### 4. Multi-Agent Support ✅ DECIDED
 **Question:** Should we support multiple agents collaborating in one session?
 
-Options:
-- A) Single agent per session (simpler, recommended for v1)
-- B) Multi-agent with handoffs (complex, defer to v2)
+**Answer: A) Single agent per session (simpler, recommended for v1)**
 
-### 5. Tool Permissions
+Rationale: Multi-agent orchestration adds significant complexity (handoff logic, context sharing, conflict resolution). Start simple for v1, prove the single-agent model works, then consider multi-agent in v2.
+
+~~Options:~~
+- ~~A) Single agent per session (simpler, recommended for v1)~~
+- ~~B) Multi-agent with handoffs (complex, defer to v2)~~
+
+### 5. Tool Permissions ✅ DECIDED
 **Question:** Should tools have permission levels?
 
-Options:
-- A) All tools available to all agents
-- B) Tools assigned per agent (current design)
-- C) Tools have permission levels (read-only, write, admin)
+**Answer: B) Tools assigned per agent (current design)**
 
-### 6. Session Persistence
+Rationale: Already in schema design (`agent_tool_assignments` table). Gives flexibility to configure which tools each agent can use without over-complicating with permission levels. Keep it simple for v1.
+
+~~Options:~~
+- ~~A) All tools available to all agents~~
+- ~~B) Tools assigned per agent (current design)~~
+- ~~C) Tools have permission levels (read-only, write, admin)~~
+
+### 6. Session Persistence ✅ DECIDED
 **Question:** How long should sessions be retained?
 
-Options:
-- A) Forever (user deletes manually)
-- B) Auto-delete after X days
-- C) Configurable per tenant
+**Answer: A) Forever (user deletes manually)**
 
-### 7. Rate Limiting
+Rationale: Simplest to implement. Users may want to reference old sessions. Storage cost is minimal for text data. Can add auto-cleanup later if needed.
+
+~~Options:~~
+- ~~A) Forever (user deletes manually)~~
+- ~~B) Auto-delete after X days~~
+- ~~C) Configurable per tenant~~
+
+### 7. Rate Limiting ✅ DECIDED
 **Question:** How should we rate limit agent executions?
 
-Options:
-- A) Max concurrent sessions per user
-- B) Max steps per day per tenant
-- C) Token budget per tenant
-- D) All of the above
+**Answer: A) Max concurrent sessions per user**
 
-### 8. Streaming
+Rationale: Simplest to implement and prevents runaway costs. One user can't monopolize resources. Can add token budgets or daily limits later if needed.
+
+~~Options:~~
+- ~~A) Max concurrent sessions per user~~
+- ~~B) Max steps per day per tenant~~
+- ~~C) Token budget per tenant~~
+- ~~D) All of the above~~
+
+### 8. Streaming ✅ DECIDED
 **Question:** Should agent responses stream to the UI?
 
-Options:
-- A) No streaming (simpler, current design)
-- B) Stream LLM responses only
-- C) Stream everything including tool results
+**Answer: C) Stream everything including tool results**
+
+Rationale: Users need to see the agent's reasoning, questions, and tool interactions in real-time. This provides visibility into what the agent is doing and builds trust. Requires SSE or WebSocket implementation.
+
+~~Options:~~
+- ~~A) No streaming (simpler, current design)~~
+- ~~B) Stream LLM responses only~~
+- ~~C) Stream everything including tool results~~
 
 ---
 
