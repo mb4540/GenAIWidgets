@@ -41,6 +41,7 @@ export interface Agent {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  assigned_tools?: Array<{ tool_id: string; name: string }>;
 }
 
 /**

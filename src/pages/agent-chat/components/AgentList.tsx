@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Bot, Trash2, Pencil, Eye, Zap, ZapOff, MessageSquare, Brain } from 'lucide-react';
+import { Bot, Trash2, Pencil, Eye, Zap, ZapOff, MessageSquare, Brain, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Agent } from '@/types/agent';
 
@@ -99,7 +99,7 @@ export default function AgentList({
               <span className="line-clamp-1">{agent.goal}</span>
             </div>
 
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3">
               <span className={`text-xs px-2 py-1 rounded-full ${getProviderBadgeColor(agent.model_provider)}`}>
                 {agent.model_provider}
               </span>
@@ -107,6 +107,21 @@ export default function AgentList({
                 {agent.model_name}
               </span>
             </div>
+
+            {agent.assigned_tools && agent.assigned_tools.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {agent.assigned_tools.map((tool) => (
+                  <span
+                    key={tool.tool_id}
+                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                    title={tool.name}
+                  >
+                    <Wrench className="h-3 w-3" />
+                    {tool.name}
+                  </span>
+                ))}
+              </div>
+            )}
 
             <div className="flex items-center justify-between pt-3 border-t border-border">
               <div className="flex items-center gap-2">

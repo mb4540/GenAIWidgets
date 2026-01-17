@@ -144,15 +144,26 @@ export default async function handler(req: Request, _context: Context): Promise<
         return createSuccessResponse({ agent: mapRowToAgent(agent) });
       }
 
-      // List all agents for tenant
+      // List all agents for tenant with tool counts
       const agents = await sql`
-        SELECT * FROM agents 
-        WHERE tenant_id = ${tenantId} OR ${isAdmin}
-        ORDER BY name
-      ` as AgentRow[];
+        SELECT a.*, 
+          COALESCE(
+            (SELECT json_agg(json_build_object('tool_id', t.tool_id, 'name', t.name))
+             FROM agent_tool_assignments ata
+             JOIN agent_tools t ON ata.tool_id = t.tool_id
+             WHERE ata.agent_id = a.agent_id),
+            '[]'::json
+          ) as assigned_tools
+        FROM agents a
+        WHERE a.tenant_id = ${tenantId} OR ${isAdmin}
+        ORDER BY a.name
+      ` as (AgentRow & { assigned_tools: Array<{ tool_id: string; name: string }> })[];
 
       return createSuccessResponse({
-        agents: agents.map(mapRowToAgent),
+        agents: agents.map(row => ({
+          ...mapRowToAgent(row),
+          assigned_tools: row.assigned_tools || [],
+        })),
       });
     }
 
