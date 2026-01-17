@@ -15,7 +15,7 @@ export type MessageRole = 'user' | 'assistant' | 'tool' | 'system';
 export type MemoryType = 'fact' | 'preference' | 'learned' | 'user_provided';
 
 // Tool types
-export type ToolType = 'mcp_server' | 'python_script';
+export type ToolType = 'mcp_server' | 'python_script' | 'builtin';
 
 // MCP server authentication types
 export type McpAuthType = 'none' | 'api_key' | 'bearer' | 'basic';

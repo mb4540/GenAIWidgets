@@ -160,14 +160,84 @@ function convertToolsToDefinitions(tools: ToolRow[]): ToolDefinition[] {
   }));
 }
 
+// Map of builtin tool names to their API endpoints
+const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
+  get_weather: '/api/tools/weather',
+};
+
 async function executeToolCall(
-  _toolCall: ToolCall,
-  _tools: ToolRow[]
+  toolCall: ToolCall,
+  tools: ToolRow[],
+  authToken: string
 ): Promise<{ success: boolean; result: string }> {
-  // For now, return a placeholder - actual MCP execution will be implemented later
+  const toolName = toolCall.function.name;
+  const tool = tools.find(t => t.name === toolName);
+  
+  if (!tool) {
+    return {
+      success: false,
+      result: `Tool not found: ${toolName}`,
+    };
+  }
+
+  // Handle builtin tools
+  if (tool.tool_type === 'builtin') {
+    const endpoint = BUILTIN_TOOL_ENDPOINTS[toolName];
+    if (!endpoint) {
+      return {
+        success: false,
+        result: `Builtin tool endpoint not configured: ${toolName}`,
+      };
+    }
+
+    try {
+      const toolInput = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+      
+      // Get the base URL from environment or construct it
+      const baseUrl = process.env.URL || 'http://localhost:8888';
+      
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(toolInput),
+      });
+
+      const data = await response.json() as { success: boolean; result?: unknown; error?: string };
+      
+      if (data.success && data.result) {
+        return {
+          success: true,
+          result: JSON.stringify(data.result, null, 2),
+        };
+      } else {
+        return {
+          success: false,
+          result: data.error || 'Tool execution failed',
+        };
+      }
+    } catch (error) {
+      console.error(`[executeToolCall] Builtin tool error:`, error);
+      return {
+        success: false,
+        result: `Tool execution error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  // Handle MCP server tools (future implementation)
+  if (tool.tool_type === 'mcp_server') {
+    return {
+      success: false,
+      result: 'MCP server tool execution not yet implemented.',
+    };
+  }
+
   return {
     success: false,
-    result: 'Tool execution not yet implemented. MCP server integration pending.',
+    result: `Unsupported tool type: ${tool.tool_type}`,
   };
 }
 
@@ -193,6 +263,10 @@ export default async function handler(req: Request, _context: Context): Promise<
   const sql = neon(DATABASE_URL);
 
   try {
+    // Extract auth token for tool calls
+    const authHeader = req.headers.get('Authorization') || '';
+    const authToken = authHeader.replace('Bearer ', '');
+
     const body = await req.json() as { sessionId: string; message: string };
     const { sessionId, message } = body;
 
@@ -328,7 +402,7 @@ export default async function handler(req: Request, _context: Context): Promise<
         // Execute each tool call
         for (const toolCall of llmResponse.tool_calls) {
           currentStep++;
-          const toolResult = await executeToolCall(toolCall, tools);
+          const toolResult = await executeToolCall(toolCall, tools, authToken);
 
           await saveMessage(
             sql, sessionId, currentStep, 'tool',

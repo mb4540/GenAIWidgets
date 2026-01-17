@@ -190,6 +190,12 @@
   to = "/.netlify/functions/agent-loop-background"
   status = 200
 
+# Builtin tool endpoints
+[[redirects]]
+  from = "/api/tools/weather"
+  to = "/.netlify/functions/tool-weather"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
