@@ -28,7 +28,7 @@ This execution plan breaks down the Agent Mode Chat feature into testable phases
 
 | Phase | Name                       | Status         | Completion Date |
 |-------|----------------------------|----------------|-----------------|
-| 1     | Database Schema            | ⬜ NOT STARTED | -               |
+| 1     | Database Schema            | ✅ COMPLETED   | 2026-01-17      |
 | 2     | Agent CRUD API             | ⬜ NOT STARTED | -               |
 | 3     | Agent Management UI        | ⬜ NOT STARTED | -               |
 | 4     | Tools & MCP Infrastructure | ⬜ NOT STARTED | -               |
@@ -43,35 +43,35 @@ This execution plan breaks down the Agent Mode Chat feature into testable phases
 
 ## Phase 1: Database Schema
 
-**Status:** ⬜ NOT STARTED
+**Status:** ✅ COMPLETED
 
 **Goal:** Create all database tables required for Agent Mode.
 
 ### Tasks
 
-- [ ] 1.1 Review `/db_ref.md` to understand existing schema
-- [ ] 1.2 Create `migrations/009_agents_table.sql`
-  - [ ] `agents` table with all columns
-  - [ ] Foreign keys to `tenants` and `users`
-  - [ ] Indexes on `tenant_id`
-  - [ ] Unique constraint on `(tenant_id, name)`
-- [ ] 1.3 Create `migrations/010_agent_sessions_tables.sql`
-  - [ ] `agent_sessions` table
-  - [ ] `agent_session_messages` table
-  - [ ] All foreign keys and indexes
-- [ ] 1.4 Create `migrations/011_agent_memory_table.sql`
-  - [ ] `agent_long_term_memory` table
-  - [ ] Foreign keys and indexes
-- [ ] 1.5 Create `migrations/012_agent_tools_tables.sql`
-  - [ ] `agent_tools` table
-  - [ ] `agent_tool_assignments` table
-  - [ ] Foreign keys and indexes
-- [ ] 1.6 Create `migrations/013_mcp_servers_table.sql`
-  - [ ] `mcp_servers` table
-  - [ ] Foreign keys and indexes
-- [ ] 1.7 Run all migrations locally
-- [ ] 1.8 Update `/db_ref.md` with new tables
-- [ ] 1.9 Create TypeScript types in `src/types/agent.ts`
+- [x] 1.1 Review `/db_ref.md` to understand existing schema
+- [x] 1.2 Create `migrations/009_agents_table.sql`
+  - [x] `agents` table with all columns
+  - [x] Foreign keys to `tenants` and `users`
+  - [x] Indexes on `tenant_id`
+  - [x] Unique constraint on `(tenant_id, name)`
+- [x] 1.3 Create `migrations/010_agent_sessions_tables.sql`
+  - [x] `agent_sessions` table
+  - [x] `agent_session_messages` table
+  - [x] All foreign keys and indexes
+- [x] 1.4 Create `migrations/011_agent_memory_table.sql`
+  - [x] `agent_long_term_memory` table
+  - [x] Foreign keys and indexes
+- [x] 1.5 Create `migrations/012_agent_tools_tables.sql`
+  - [x] `agent_tools` table
+  - [x] `agent_tool_assignments` table
+  - [x] Foreign keys and indexes
+- [x] 1.6 Create `migrations/013_mcp_servers_table.sql`
+  - [x] `mcp_servers` table
+  - [x] Foreign keys and indexes
+- [x] 1.7 Run all migrations locally
+- [x] 1.8 Update `/db_ref.md` with new tables
+- [x] 1.9 Create TypeScript types in `src/types/agent.ts`
 
 ### Test Criteria
 
