@@ -13,6 +13,7 @@ import RagPreprocessingPage from './pages/rag/RagPreprocessingPage'
 import AgentManagementPage from './pages/agent-chat/AgentManagementPage'
 import ToolsManagementPage from './pages/agent-chat/ToolsManagementPage'
 import AgentChatPage from './pages/agent-chat/AgentChatPage'
+import MemoryManagementPage from './pages/agent-chat/MemoryManagementPage'
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
               <Route path="/agent-chat" element={<AgentManagementPage />} />
               <Route path="/agent-chat/tools" element={<ToolsManagementPage />} />
               <Route path="/agent-chat/chat" element={<AgentChatPage />} />
+              <Route path="/agent-chat/memories" element={<MemoryManagementPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>
