@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/ai-gateway-chat', label: 'AI Gateway Chat', icon: MessageSquare },
-  { to: '/agent-chat', label: 'Agent Chat', icon: Bot },
+  { to: '/agent-chat', label: 'Agent Chat', icon: Bot, end: true },
   { to: '/agent-chat/tools', label: 'Agent Tools', icon: Wrench },
   { to: '/files', label: 'File Storage', icon: FolderOpen },
   { to: '/rag-preprocessing', label: 'RAG Preprocessing', icon: Layers },
@@ -43,6 +43,7 @@ export function AppLayout() {
             <NavLink
               key={item.to}
               to={item.to}
+              end={'end' in item ? item.end : undefined}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
