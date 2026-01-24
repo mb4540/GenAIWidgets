@@ -7,8 +7,9 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/ai-gateway-chat', label: 'AI Gateway Chat', icon: MessageSquare },
-  { to: '/agent-chat', label: 'Agent Chat', icon: Bot, end: true },
-  { to: '/agent-chat/tools', label: 'Agent Tools', icon: Wrench },
+  { to: '/agent-chat', label: 'Agent Chat', icon: MessageSquare },
+  { to: '/agents', label: 'Agent Management', icon: Bot, end: true },
+  { to: '/agents/tools', label: 'Agent Tools', icon: Wrench },
   { to: '/files', label: 'File Storage', icon: FolderOpen },
   { to: '/rag-preprocessing', label: 'RAG Preprocessing', icon: Layers },
 ];
