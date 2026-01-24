@@ -23,6 +23,12 @@ export type McpAuthType = 'none' | 'api_key' | 'bearer' | 'basic';
 // MCP server health status
 export type McpHealthStatus = 'healthy' | 'unhealthy' | 'unknown';
 
+// Execution plan status for autonomous agent operation
+export type PlanStatus = 'planning' | 'executing' | 'completed' | 'failed' | 'waiting_for_user';
+
+// Individual step status within an execution plan
+export type StepStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+
 /**
  * Agent definition
  */
@@ -246,4 +252,39 @@ export interface StreamEvent {
     goal_met?: boolean;
   };
   timestamp: string;
+}
+
+/**
+ * Individual step in an execution plan
+ */
+export interface PlanStep {
+  readonly step_number: number;
+  readonly description: string;
+  status: StepStatus;
+  result?: string;
+  completed_at?: string;
+}
+
+/**
+ * Execution plan stored in session memory
+ */
+export interface ExecutionPlan {
+  readonly created_at: string;
+  updated_at: string;
+  readonly goal: string;
+  steps: readonly PlanStep[];
+  current_step_index: number;
+  status: PlanStatus;
+}
+
+/**
+ * Session memory entry (short-term memory)
+ */
+export interface SessionMemory {
+  memory_id: string;
+  session_id: string;
+  memory_key: string;
+  memory_value: unknown;
+  created_at: string;
+  updated_at: string;
 }
