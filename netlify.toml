@@ -19,6 +19,9 @@
 [functions."ai-chat-background"]
   timeout = 120
 
+[functions."agent-chat"]
+  timeout = 60
+
 # API routes redirect to functions
 [[redirects]]
   from = "/api/auth/signup"
