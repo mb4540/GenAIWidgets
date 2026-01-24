@@ -50,7 +50,7 @@ export default function PageInfoModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-card border border-border rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden ml-16">
+      <div className="relative bg-card border border-border rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-hidden ml-16 text-foreground">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/50">
           <div className="flex items-center gap-2">
