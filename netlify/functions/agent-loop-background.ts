@@ -137,7 +137,7 @@ async function updateSessionStatus(
   }
 }
 
-function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[]): string {
+function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[], planningPrompt?: string): string {
   let prompt = agent.system_prompt;
 
   prompt += `\n\n## Your Goal\n${agent.goal}`;
@@ -149,11 +149,17 @@ function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[]): string {
     }
   }
 
-  prompt += `\n\n## Instructions
+  // Include planning instructions if provided
+  if (planningPrompt) {
+    prompt += `\n\n${planningPrompt}`;
+  } else {
+    // Default instructions (fallback if planning prompt not loaded)
+    prompt += `\n\n## Instructions
 - Work towards completing the goal step by step
 - Use available tools when needed
 - When you believe the goal is complete, respond with "GOAL_COMPLETE" at the start of your message
 - If you cannot complete the goal, explain why`;
+  }
 
   return prompt;
 }
@@ -379,6 +385,14 @@ export default async function handler(req: Request, _context: Context): Promise<
     const tools = await getAgentTools(sql, agent.agent_id);
     const toolDefinitions = convertToolsToDefinitions(tools);
 
+    // Fetch planning prompt from database
+    const planningPromptResult = await sql`
+      SELECT system_prompt FROM prompts 
+      WHERE function_name = 'agent_planning_system' AND is_active = true
+      LIMIT 1
+    ` as { system_prompt: string }[];
+    const planningPrompt = planningPromptResult[0]?.system_prompt;
+
     // Get existing messages
     const existingMessages = await sql`
       SELECT * FROM agent_session_messages
@@ -388,7 +402,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
     // Build conversation history
     const conversationMessages: LLMMessage[] = [
-      { role: 'system', content: buildSystemPrompt(agent, memories) },
+      { role: 'system', content: buildSystemPrompt(agent, memories, planningPrompt) },
     ];
 
     for (const msg of existingMessages) {
