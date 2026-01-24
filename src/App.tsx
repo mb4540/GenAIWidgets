@@ -29,7 +29,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/ai-gateway-chat" element={<AiGatewayChatPage />} />
+              <Route path="/compare-ai-models" element={<AiGatewayChatPage />} />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/rag-preprocessing" element={<RagPreprocessingPage />} />
               <Route path="/agents" element={<AgentManagementPage />} />
