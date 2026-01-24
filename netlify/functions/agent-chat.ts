@@ -60,6 +60,53 @@ const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
   update_plan: '/api/tools/plan',
 };
 
+// Helper to auto-complete the current in-progress step when work tools succeed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function autoCompleteCurrentStep(
+  sql: any,
+  sessionId: string,
+  toolName: string,
+  _toolResult: string
+): Promise<void> {
+  try {
+    // Fetch current plan
+    const planResult = await sql`
+      SELECT memory_value FROM agent_session_memory
+      WHERE session_id = ${sessionId} AND memory_key = 'execution_plan'
+    ` as { memory_value: ExecutionPlan }[];
+    
+    if (!planResult[0]?.memory_value) return;
+    
+    const plan = planResult[0].memory_value;
+    if (plan.status !== 'executing') return;
+    
+    // Find the in-progress step
+    const inProgressStep = plan.steps.find(s => s.status === 'in_progress');
+    if (!inProgressStep) return;
+    
+    // Mark it completed with a summary
+    inProgressStep.status = 'completed';
+    inProgressStep.result = `Auto-completed: ${toolName} executed successfully`;
+    inProgressStep.completed_at = new Date().toISOString();
+    
+    // Update current_step_index to next pending step
+    const nextPendingIndex = plan.steps.findIndex(s => s.status === 'pending');
+    plan.current_step_index = nextPendingIndex >= 0 ? nextPendingIndex : plan.steps.length;
+    plan.updated_at = new Date().toISOString();
+    
+    // Save updated plan
+    await sql`
+      UPDATE agent_session_memory
+      SET memory_value = ${JSON.stringify(plan)}::jsonb, updated_at = now()
+      WHERE session_id = ${sessionId} AND memory_key = 'execution_plan'
+    `;
+    
+    console.log(`[agent-chat] Auto-completed step ${inProgressStep.step_number} after ${toolName} success`);
+  } catch (error) {
+    console.error('[agent-chat] Error auto-completing step:', error);
+  }
+}
+
 async function executeToolCall(
   toolCall: ToolCall,
   tools: ToolRow[],
@@ -152,11 +199,21 @@ async function executeToolCall(
   };
 }
 
+interface ExecutionPlanStep {
+  step_number: number;
+  description: string;
+  status: string;
+  result?: string;
+  completed_at?: string;
+}
+
 interface ExecutionPlan {
   goal: string;
-  steps: Array<{ step_number: number; description: string; status: string; result?: string }>;
+  steps: ExecutionPlanStep[];
   status: string;
   current_step_index: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 function buildSystemPrompt(
@@ -444,6 +501,11 @@ export default async function handler(req: Request, _context: Context): Promise<
         // Track if this is a work tool (not just plan management)
         if (workToolNames.includes(toolCall.function.name)) {
           calledWorkTool = true;
+          
+          // Auto-complete the current in-progress step when work tools succeed
+          if (toolResult.success) {
+            await autoCompleteCurrentStep(sql, sessionId, toolCall.function.name, toolResult.result);
+          }
         }
         
         // Save tool result to database
