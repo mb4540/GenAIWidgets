@@ -60,13 +60,13 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
     setLoading(true);
 
     try {
-      // Fetch session messages
-      const messagesRes = await fetch(`/api/agent-sessions?sessionId=${sessionId}&includeMessages=true`, {
+      // Fetch session with messages (use 'id' param, not 'sessionId')
+      const messagesRes = await fetch(`/api/agent-sessions?id=${sessionId}`, {
         headers: getAuthHeaders(),
       });
       const messagesData = await messagesRes.json();
-      if (messagesData.success && messagesData.data?.messages) {
-        setSessionMessages(messagesData.data.messages);
+      if (messagesData.success && messagesData.messages) {
+        setSessionMessages(messagesData.messages);
       }
 
       // Fetch session memory (including execution plan)
@@ -74,9 +74,8 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
         headers: getAuthHeaders(),
       });
       const memoryData = await memoryRes.json();
-      if (memoryData.success && memoryData.data) {
-        // Wrap single memory in array for display
-        setSessionMemory(Array.isArray(memoryData.data) ? memoryData.data : [memoryData.data]);
+      if (memoryData.success && memoryData.memories) {
+        setSessionMemory(memoryData.memories);
       } else {
         setSessionMemory([]);
       }
@@ -84,7 +83,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
       addEntry({
         type: 'info',
         endpoint: 'debug-refresh',
-        data: { messages: messagesData.data?.messages?.length || 0, memoryFound: !!memoryData.data },
+        data: { messages: messagesData.messages?.length || 0, memoryFound: memoryData.memories?.length > 0 },
       });
     } catch (error) {
       addEntry({

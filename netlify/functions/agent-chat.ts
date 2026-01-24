@@ -294,9 +294,13 @@ export default async function handler(req: Request, _context: Context): Promise<
 
     for (const msg of existingMessages) {
       if (msg.role === 'user' || msg.role === 'assistant') {
+        // Skip messages with empty content to avoid LLM API errors
+        const content = msg.content?.trim() || '';
+        if (!content) continue;
+        
         conversationMessages.push({
           role: msg.role as 'user' | 'assistant',
-          content: msg.content,
+          content: content,
         });
       }
     }
