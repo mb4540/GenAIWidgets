@@ -63,7 +63,8 @@ const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
 async function executeToolCall(
   toolCall: ToolCall,
   tools: ToolRow[],
-  authToken: string
+  authToken: string,
+  sessionId: string
 ): Promise<{ success: boolean; result: string }> {
   const toolName = toolCall.function.name;
   const tool = tools.find(t => t.name === toolName);
@@ -97,6 +98,11 @@ async function executeToolCall(
       };
       if (fileToolActions[toolName]) {
         toolInput.action = fileToolActions[toolName];
+      }
+      
+      // For update_plan tool, add the sessionId
+      if (toolName === 'update_plan') {
+        toolInput.sessionId = sessionId;
       }
       
       const baseUrl = process.env.URL || 'http://localhost:8888';
@@ -364,7 +370,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
       // Execute each tool and collect results
       for (const toolCall of llmResponse.tool_calls) {
-        const toolResult = await executeToolCall(toolCall, tools, authToken);
+        const toolResult = await executeToolCall(toolCall, tools, authToken, sessionId);
         
         // Save tool result to database
         currentStep++;
