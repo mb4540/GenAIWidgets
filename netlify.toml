@@ -235,6 +235,29 @@
   to = "/.netlify/functions/generate-agent-prompt"
   status = 200
 
+# AI Chat (single model) API
+[[redirects]]
+  from = "/api/ai-chat-sessions"
+  to = "/.netlify/functions/ai-chat-sessions"
+  status = 200
+
+[[redirects]]
+  from = "/api/ai-chat-single"
+  to = "/.netlify/functions/ai-chat-single"
+  status = 200
+
+# Admin Blobs API
+[[redirects]]
+  from = "/api/admin/blobs"
+  to = "/.netlify/functions/admin-blobs"
+  status = 200
+
+# Web Search Tool
+[[redirects]]
+  from = "/api/tools/web-search"
+  to = "/.netlify/functions/tool-web-search"
+  status = 200
+
 # SPA fallback - must be last
 [[redirects]]
   from = "/*"
