@@ -38,9 +38,10 @@ interface DebugPanelProps {
   sessionId: string | null;
   isOpen: boolean;
   onClose: () => void;
+  inline?: boolean;
 }
 
-export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClose }) => {
+export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClose, inline = false }) => {
   const [entries, setEntries] = useState<DebugEntry[]>([]);
   const [sessionMessages, setSessionMessages] = useState<SessionMessage[]>([]);
   const [sessionMemory, setSessionMemory] = useState<SessionMemory[]>([]);
@@ -159,8 +160,12 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
 
   if (!isOpen) return null;
 
+  const containerClass = inline
+    ? 'h-full bg-gray-900 text-gray-100 flex flex-col overflow-hidden'
+    : 'fixed right-0 top-0 h-full w-96 bg-gray-900 text-gray-100 shadow-xl z-50 flex flex-col overflow-hidden';
+
   return (
-    <div className="fixed right-0 top-0 h-full w-96 bg-gray-900 text-gray-100 shadow-xl z-50 flex flex-col overflow-hidden">
+    <div className={containerClass}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-700 bg-gray-800">
         <h2 className="text-lg font-semibold">Debug Panel</h2>

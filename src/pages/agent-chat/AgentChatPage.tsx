@@ -289,15 +289,10 @@ export default function AgentChatPage(): React.ReactElement {
         </div>
       )}
 
-      {/* Plan Progress */}
-      {(currentPlan || planLoading) && (
-        <div className="px-4 pt-4">
-          <PlanProgress plan={currentPlan} isLoading={planLoading} />
-        </div>
-      )}
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Main content area - side by side when debug is open */}
+      <div className={`flex-1 flex ${debugOpen ? 'flex-row' : 'flex-col'} overflow-hidden`}>
+        {/* Messages */}
+        <div className={`${debugOpen ? 'w-1/2 border-r border-border' : 'flex-1'} overflow-y-auto p-4 space-y-4`}>
         {messages.length === 0 && (
           <div className="text-center text-muted-foreground py-8">
             <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -330,7 +325,20 @@ export default function AgentChatPage(): React.ReactElement {
             </div>
           </div>
         ))}
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Debug Panel - inline when open */}
+        {debugOpen && (
+          <div className="w-1/2 overflow-hidden">
+            <DebugPanel
+              sessionId={session?.session_id || null}
+              isOpen={true}
+              onClose={() => setDebugOpen(false)}
+              inline={true}
+            />
+          </div>
+        )}
       </div>
 
       {/* Input */}
@@ -361,12 +369,14 @@ export default function AgentChatPage(): React.ReactElement {
         )}
       </div>
 
-      {/* Debug Panel */}
-      <DebugPanel
-        sessionId={session?.session_id || null}
-        isOpen={debugOpen}
-        onClose={() => setDebugOpen(false)}
-      />
+      {/* Debug Panel - overlay mode when not inline */}
+      {!debugOpen && (
+        <DebugPanel
+          sessionId={session?.session_id || null}
+          isOpen={false}
+          onClose={() => setDebugOpen(false)}
+        />
+      )}
     </div>
   );
 }
