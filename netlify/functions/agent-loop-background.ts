@@ -167,6 +167,7 @@ const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
   read_file: '/api/tools/files',
   create_file: '/api/tools/files',
   delete_file: '/api/tools/files',
+  update_plan: '/api/tools/plan',
 };
 
 async function executeToolCall(

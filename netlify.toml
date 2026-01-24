@@ -219,6 +219,11 @@
   to = "/.netlify/functions/tool-files"
   status = 200
 
+[[redirects]]
+  from = "/api/tools/plan"
+  to = "/.netlify/functions/tool-plan"
+  status = 200
+
 # AI helper endpoints
 [[redirects]]
   from = "/api/generate-agent-prompt"
