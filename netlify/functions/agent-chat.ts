@@ -152,7 +152,19 @@ async function executeToolCall(
   };
 }
 
-function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[], hasUpdatePlanTool: boolean): string {
+interface ExecutionPlan {
+  goal: string;
+  steps: Array<{ step_number: number; description: string; status: string; result?: string }>;
+  status: string;
+  current_step_index: number;
+}
+
+function buildSystemPrompt(
+  agent: AgentRow,
+  memories: MemoryRow[],
+  hasUpdatePlanTool: boolean,
+  existingPlan?: ExecutionPlan | null
+): string {
   let prompt = agent.system_prompt;
   prompt += `\n\n## Your Goal\n${agent.goal}`;
 
@@ -165,7 +177,33 @@ function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[], hasUpdatePlan
 
   // Include planning instructions if the agent has access to the update_plan tool
   if (hasUpdatePlanTool) {
-    prompt += `\n\n## Execution Model - REQUIRED
+    // Check if there's an existing plan
+    if (existingPlan && existingPlan.status === 'executing') {
+      // EXISTING PLAN - tell agent to continue execution, NOT create new plan
+      const pendingSteps = existingPlan.steps.filter(s => s.status === 'pending');
+      const completedSteps = existingPlan.steps.filter(s => s.status === 'completed');
+      const currentStep = existingPlan.steps.find(s => s.status === 'in_progress') || pendingSteps[0];
+      
+      prompt += `\n\n## CURRENT EXECUTION PLAN (Already Created - DO NOT CREATE NEW PLAN)
+
+**Goal:** ${existingPlan.goal}
+
+**Progress:** ${completedSteps.length}/${existingPlan.steps.length} steps completed
+
+**Steps:**
+${existingPlan.steps.map(s => `${s.step_number}. [${s.status.toUpperCase()}] ${s.description}${s.result ? ` - Result: ${s.result}` : ''}`).join('\n')}
+
+### IMPORTANT: You have an active plan. DO NOT call update_plan with action="create".
+
+### Your Next Action:
+${currentStep ? `
+1. Mark step ${currentStep.step_number} as in_progress: \`update_plan\` with action="update_step", step_number=${currentStep.step_number}, step_status="in_progress"
+2. Execute step ${currentStep.step_number}: "${currentStep.description}" using your tools
+3. Mark step ${currentStep.step_number} as completed: \`update_plan\` with action="update_step", step_number=${currentStep.step_number}, step_status="completed", step_result="what you accomplished"
+` : `All steps completed! Call \`update_plan\` with action="complete" and reason="summary", then respond with GOAL_COMPLETE.`}`;
+    } else {
+      // NO PLAN - tell agent to create one first
+      prompt += `\n\n## Execution Model - REQUIRED
 
 You operate by creating and following execution plans. Follow this workflow:
 
@@ -191,6 +229,7 @@ When all steps are done:
 - ALWAYS create a plan first before doing anything else
 - ALWAYS update your plan status after each action
 - Keep steps atomic and verifiable`;
+    }
   } else {
     prompt += `\n\n## Instructions
 - Work towards completing the goal step by step
@@ -293,9 +332,23 @@ export default async function handler(req: Request, _context: Context): Promise<
     // Check if agent has access to update_plan tool
     const hasUpdatePlanTool = tools.some(t => t.name === 'update_plan');
 
+    // Fetch existing execution plan from session memory if available
+    let existingPlan: ExecutionPlan | null = null;
+    if (hasUpdatePlanTool) {
+      const planResult = await sql`
+        SELECT memory_value FROM agent_session_memory
+        WHERE session_id = ${sessionId} AND memory_key = 'execution_plan'
+      ` as Array<{ memory_value: ExecutionPlan }>;
+      
+      if (planResult.length > 0 && planResult[0]) {
+        existingPlan = planResult[0].memory_value;
+        console.log('[agent-chat] Found existing plan:', existingPlan?.status, 'steps:', existingPlan?.steps?.length);
+      }
+    }
+
     // Build conversation
     const conversationMessages: LLMMessage[] = [
-      { role: 'system', content: buildSystemPrompt(agent, memories, hasUpdatePlanTool) },
+      { role: 'system', content: buildSystemPrompt(agent, memories, hasUpdatePlanTool, existingPlan) },
     ];
 
     for (const msg of existingMessages) {
