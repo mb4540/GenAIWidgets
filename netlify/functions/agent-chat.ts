@@ -434,8 +434,17 @@ export default async function handler(req: Request, _context: Context): Promise<
       });
 
       // Execute each tool and collect results
+      // Track if we only called update_plan (no actual work tools)
+      const workToolNames = ['list_files', 'read_file', 'create_file', 'delete_file', 'get_weather'];
+      let calledWorkTool = false;
+      
       for (const toolCall of llmResponse.tool_calls) {
         const toolResult = await executeToolCall(toolCall, tools, authToken, sessionId);
+        
+        // Track if this is a work tool (not just plan management)
+        if (workToolNames.includes(toolCall.function.name)) {
+          calledWorkTool = true;
+        }
         
         // Save tool result to database
         currentStep++;
@@ -458,6 +467,72 @@ export default async function handler(req: Request, _context: Context): Promise<
           content: toolResult.result,
           tool_call_id: toolCall.id,
         });
+      }
+
+      // SERVER-SIDE ENFORCEMENT: If agent only called update_plan without doing actual work,
+      // inject a stern message and force another LLM call to execute the actual step
+      if (!calledWorkTool && llmResponse.tool_calls.some(tc => tc.function.name === 'update_plan')) {
+        console.log('[agent-chat] Agent only called update_plan without work tools - forcing execution');
+        
+        // Add enforcement message
+        currentStep++;
+        const enforcementMessage = 'You updated the plan status but did NOT execute the actual step. You MUST now use a file tool (create_file, read_file, list_files, or delete_file) to perform the work described in the step. Do NOT call update_plan again until you have completed the actual work.';
+        await sql`
+          INSERT INTO agent_session_messages (session_id, step_number, role, content)
+          VALUES (${sessionId}, ${currentStep}, 'user', ${enforcementMessage})
+        `;
+        
+        conversationMessages.push({
+          role: 'user',
+          content: enforcementMessage,
+        });
+        
+        // Make enforcement LLM call
+        const enforcementResponse = await callLLM(conversationMessages, toolDefinitions, {
+          provider: agent.model_provider as ModelProvider,
+          model: agent.model_name,
+          temperature: parseFloat(agent.temperature),
+        });
+        
+        // If enforcement call has tool calls, execute them
+        if (enforcementResponse.tool_calls && enforcementResponse.tool_calls.length > 0) {
+          conversationMessages.push({
+            role: 'assistant',
+            content: enforcementResponse.content || 'Executing tools...',
+            tool_calls: enforcementResponse.tool_calls,
+          });
+          
+          for (const toolCall of enforcementResponse.tool_calls) {
+            const toolResult = await executeToolCall(toolCall, tools, authToken, sessionId);
+            
+            currentStep++;
+            let toolInput2: Record<string, unknown> = {};
+            try {
+              toolInput2 = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+            } catch {
+              toolInput2 = { raw: toolCall.function.arguments };
+            }
+            await sql`
+              INSERT INTO agent_session_messages (session_id, step_number, role, content, tool_name, tool_input, tool_output)
+              VALUES (${sessionId}, ${currentStep}, 'tool', ${toolResult.result}, ${toolCall.function.name}, 
+                      ${JSON.stringify(toolInput2)}::jsonb, ${JSON.stringify({ success: toolResult.success, result: toolResult.result })}::jsonb)
+            `;
+            
+            conversationMessages.push({
+              role: 'tool',
+              content: toolResult.result,
+              tool_call_id: toolCall.id,
+            });
+          }
+        }
+        
+        // Save enforcement response
+        currentStep++;
+        const enforcementContent = enforcementResponse.content || '';
+        await sql`
+          INSERT INTO agent_session_messages (session_id, step_number, role, content, tokens_used)
+          VALUES (${sessionId}, ${currentStep}, 'assistant', ${enforcementContent}, ${enforcementResponse.tokens_used})
+        `;
       }
 
       // Make second LLM call with tool results
