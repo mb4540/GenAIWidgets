@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Users, Building2, UserPlus, MessageSquare, Info } from 'lucide-react';
+import { Users, Building2, UserPlus, MessageSquare, Info, Database } from 'lucide-react';
 import PageInfoModal from '@/components/common/PageInfoModal';
 import { adminInfo } from './adminInfo';
 import {
@@ -9,6 +9,7 @@ import {
   UsersTab,
   MembershipsTab,
   PromptsTab,
+  BlobStorageTab,
   PromptEditModal,
   TenantEditModal,
   TenantDetailModal,
@@ -21,7 +22,7 @@ import {
   type PromptFormData,
 } from './components';
 
-type TabType = 'tenants' | 'users' | 'memberships' | 'prompts';
+type TabType = 'tenants' | 'users' | 'memberships' | 'prompts' | 'blobs';
 
 export default function AdminPage(): React.ReactElement {
   const { user } = useAuth();
@@ -366,6 +367,7 @@ export default function AdminPage(): React.ReactElement {
     { id: 'users' as const, label: 'Users', icon: Users, count: users.length },
     { id: 'memberships' as const, label: 'Memberships', icon: UserPlus, count: memberships.length },
     { id: 'prompts' as const, label: 'Prompts', icon: MessageSquare, count: prompts.length },
+    { id: 'blobs' as const, label: 'Blob Storage', icon: Database },
   ];
 
   return (
@@ -412,7 +414,7 @@ export default function AdminPage(): React.ReactElement {
             >
               <tab.icon className="h-4 w-4" />
               {tab.label}
-              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{tab.count}</span>
+              {'count' in tab && <span className="text-xs bg-muted px-2 py-0.5 rounded-full">{tab.count}</span>}
             </button>
           ))}
         </nav>
@@ -461,6 +463,10 @@ export default function AdminPage(): React.ReactElement {
               onEdit={handleEditPrompt}
               onToggleActive={handleTogglePromptActive}
             />
+          )}
+
+          {activeTab === 'blobs' && (
+            <BlobStorageTab />
           )}
         </>
       )}
