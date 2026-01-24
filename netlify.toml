@@ -224,6 +224,11 @@
   to = "/.netlify/functions/tool-plan"
   status = 200
 
+[[redirects]]
+  from = "/api/session-memory"
+  to = "/.netlify/functions/session-memory"
+  status = 200
+
 # AI helper endpoints
 [[redirects]]
   from = "/api/generate-agent-prompt"

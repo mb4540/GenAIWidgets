@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router-dom';
-import { Bot, Send, Square, Loader2 } from 'lucide-react';
-import type { Agent, AgentSession, SessionMessage } from '@/types/agent';
+import { Bot, Send, Loader2 } from 'lucide-react';
+import { PlanProgress } from '@/components/agent-chat/PlanProgress';
+import type { Agent, AgentSession, SessionMessage, ExecutionPlan } from '@/types/agent';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -24,6 +25,8 @@ export default function AgentChatPage(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<ExecutionPlan | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const getAuthHeaders = useCallback(() => {
@@ -41,6 +44,25 @@ export default function AgentChatPage(): React.ReactElement {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const fetchPlan = useCallback(async (sessionId: string): Promise<void> => {
+    setPlanLoading(true);
+    try {
+      const response = await fetch(`/api/session-memory?sessionId=${sessionId}&key=execution_plan`, {
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json() as { success: boolean; memory?: { memory_value: ExecutionPlan } };
+      if (data.success && data.memory) {
+        setCurrentPlan(data.memory.memory_value);
+      } else {
+        setCurrentPlan(null);
+      }
+    } catch {
+      console.error('Failed to fetch plan');
+    } finally {
+      setPlanLoading(false);
+    }
+  }, [getAuthHeaders]);
 
   const fetchAgent = useCallback(async (): Promise<void> => {
     if (!agentId) return;
@@ -113,6 +135,13 @@ export default function AgentChatPage(): React.ReactElement {
     void init();
   }, [fetchAgent, fetchOrCreateSession]);
 
+  // Fetch plan when session is loaded
+  useEffect(() => {
+    if (session?.session_id) {
+      void fetchPlan(session.session_id);
+    }
+  }, [session?.session_id, fetchPlan]);
+
   const sendMessage = async (): Promise<void> => {
     if (!inputMessage.trim() || !session || sending) return;
 
@@ -155,6 +184,11 @@ export default function AgentChatPage(): React.ReactElement {
             current_step: data.session!.current_step,
             goal_met: data.session!.goal_met,
           } : null);
+        }
+
+        // Refresh plan after message
+        if (session) {
+          void fetchPlan(session.session_id);
         }
       } else {
         setError(data.error || 'Failed to send message');
@@ -220,6 +254,13 @@ export default function AgentChatPage(): React.ReactElement {
       {error && (
         <div className="p-3 bg-destructive/10 border-b border-destructive/20 text-destructive text-sm">
           {error}
+        </div>
+      )}
+
+      {/* Plan Progress */}
+      {(currentPlan || planLoading) && (
+        <div className="px-4 pt-4">
+          <PlanProgress plan={currentPlan} isLoading={planLoading} />
         </div>
       )}
 
