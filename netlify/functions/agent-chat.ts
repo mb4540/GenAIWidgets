@@ -184,6 +184,12 @@ function buildSystemPrompt(
       const completedSteps = existingPlan.steps.filter(s => s.status === 'completed');
       const currentStep = existingPlan.steps.find(s => s.status === 'in_progress') || pendingSteps[0];
       
+      // Determine the actual current step and whether it's already in progress
+      const inProgressStep = existingPlan.steps.find(s => s.status === 'in_progress');
+      const nextPendingStep = pendingSteps[0];
+      const stepToExecute = inProgressStep || nextPendingStep;
+      const isAlreadyInProgress = !!inProgressStep;
+      
       prompt += `\n\n## CURRENT EXECUTION PLAN (Already Created - DO NOT CREATE NEW PLAN)
 
 **Goal:** ${existingPlan.goal}
@@ -196,11 +202,17 @@ ${existingPlan.steps.map(s => `${s.step_number}. [${s.status.toUpperCase()}] ${s
 ### IMPORTANT: You have an active plan. DO NOT call update_plan with action="create".
 
 ### Your Next Action:
-${currentStep ? `
-1. Mark step ${currentStep.step_number} as in_progress: \`update_plan\` with action="update_step", step_number=${currentStep.step_number}, step_status="in_progress"
-2. Execute step ${currentStep.step_number}: "${currentStep.description}" using your tools
-3. Mark step ${currentStep.step_number} as completed: \`update_plan\` with action="update_step", step_number=${currentStep.step_number}, step_status="completed", step_result="what you accomplished"
-` : `All steps completed! Call \`update_plan\` with action="complete" and reason="summary", then respond with GOAL_COMPLETE.`}`;
+${stepToExecute ? (isAlreadyInProgress ? `
+Step ${stepToExecute.step_number} is ALREADY IN PROGRESS. Do NOT call update_plan with step_status="in_progress" again.
+
+**EXECUTE NOW:** "${stepToExecute.description}"
+- Use the appropriate tools (create_file, read_file, list_files, delete_file, etc.) to complete this step
+- After executing, call \`update_plan\` with action="update_step", step_number=${stepToExecute.step_number}, step_status="completed", step_result="summary of what you did"
+` : `
+1. Mark step ${stepToExecute.step_number} as in_progress: \`update_plan\` with action="update_step", step_number=${stepToExecute.step_number}, step_status="in_progress"
+2. Execute step ${stepToExecute.step_number}: "${stepToExecute.description}" using your tools
+3. Mark step ${stepToExecute.step_number} as completed: \`update_plan\` with action="update_step", step_number=${stepToExecute.step_number}, step_status="completed", step_result="what you accomplished"
+`) : `All steps completed! Call \`update_plan\` with action="complete" and reason="summary", then respond with GOAL_COMPLETE.`}`;
     } else {
       // NO PLAN - tell agent to create one first
       prompt += `\n\n## Execution Model - REQUIRED
