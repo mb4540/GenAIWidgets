@@ -57,6 +57,7 @@ const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
   read_file: '/api/tools/files',
   create_file: '/api/tools/files',
   delete_file: '/api/tools/files',
+  update_plan: '/api/tools/plan',
 };
 
 async function executeToolCall(
@@ -379,6 +380,19 @@ export default async function handler(req: Request, _context: Context): Promise<
         `;
       }
 
+      // If not complete, trigger background function for autonomous continuation
+      if (!finalGoalMet) {
+        const baseUrl = process.env.URL || 'http://localhost:8888';
+        void fetch(`${baseUrl}/.netlify/functions/agent-loop-background`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': req.headers.get('Authorization') || '',
+          },
+          body: JSON.stringify({ sessionId }),
+        }).catch(err => console.error('[agent-chat] Failed to trigger background loop:', err));
+      }
+
       return createSuccessResponse({
         message: {
           role: 'assistant',
@@ -391,6 +405,19 @@ export default async function handler(req: Request, _context: Context): Promise<
           goal_met: finalGoalMet,
         },
       });
+    }
+
+    // If no tool calls but session still active, trigger background for plan-based continuation
+    if (!goalMet) {
+      const baseUrl = process.env.URL || 'http://localhost:8888';
+      void fetch(`${baseUrl}/.netlify/functions/agent-loop-background`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': req.headers.get('Authorization') || '',
+        },
+        body: JSON.stringify({ sessionId }),
+      }).catch(err => console.error('[agent-chat] Failed to trigger background loop:', err));
     }
 
     return createSuccessResponse({
