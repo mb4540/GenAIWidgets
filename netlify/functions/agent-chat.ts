@@ -100,9 +100,9 @@ async function executeToolCall(
         toolInput.action = fileToolActions[toolName];
       }
       
-      // For update_plan tool, add the sessionId
+      // For update_plan tool, add the session_id (snake_case to match tool-plan.ts)
       if (toolName === 'update_plan') {
-        toolInput.sessionId = sessionId;
+        toolInput.session_id = sessionId;
       }
       
       const baseUrl = process.env.URL || 'http://localhost:8888';
