@@ -23,6 +23,18 @@ interface QAStats {
   totalJobs: number;
 }
 
+interface AiChatStats {
+  totalSessions: number;
+  activeSessions: number;
+}
+
+interface AgentStats {
+  totalAgents: number;
+  activeAgents: number;
+  totalSessions: number;
+  totalTools: number;
+}
+
 interface RecentActivity {
   type: 'extraction' | 'qa_generation';
   fileName: string;
@@ -164,10 +176,54 @@ export default async function handler(req: Request, _context: Context): Promise<
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 10);
 
+    // AI Chat stats (user-scoped)
+    const aiChatStatsResult = await sql`
+      SELECT 
+        COUNT(*) as total_sessions,
+        COUNT(*) FILTER (WHERE status = 'active') as active_sessions
+      FROM ai_chat_sessions
+      WHERE user_id = ${context.userId}
+    ` as { total_sessions: string; active_sessions: string }[];
+
+    const aiChatStats: AiChatStats = {
+      totalSessions: parseInt(aiChatStatsResult[0]?.total_sessions || '0', 10),
+      activeSessions: parseInt(aiChatStatsResult[0]?.active_sessions || '0', 10),
+    };
+
+    // Agent stats (tenant-scoped)
+    const agentCountResult = await sql`
+      SELECT 
+        COUNT(*) as total_agents,
+        COUNT(*) FILTER (WHERE is_active = true) as active_agents
+      FROM agents
+      WHERE tenant_id = ${context.tenantId}
+    ` as { total_agents: string; active_agents: string }[];
+
+    const agentSessionsResult = await sql`
+      SELECT COUNT(*) as total_sessions
+      FROM agent_sessions
+      WHERE tenant_id = ${context.tenantId}
+    ` as { total_sessions: string }[];
+
+    const toolsCountResult = await sql`
+      SELECT COUNT(*) as total_tools
+      FROM agent_tools
+      WHERE tenant_id = ${context.tenantId} AND is_active = true
+    ` as { total_tools: string }[];
+
+    const agentStats: AgentStats = {
+      totalAgents: parseInt(agentCountResult[0]?.total_agents || '0', 10),
+      activeAgents: parseInt(agentCountResult[0]?.active_agents || '0', 10),
+      totalSessions: parseInt(agentSessionsResult[0]?.total_sessions || '0', 10),
+      totalTools: parseInt(toolsCountResult[0]?.total_tools || '0', 10),
+    };
+
     return createSuccessResponse({
       fileStats,
       extractionStats,
       qaStats,
+      aiChatStats,
+      agentStats,
       recentActivity,
     });
   } catch (error) {

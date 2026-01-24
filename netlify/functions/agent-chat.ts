@@ -58,6 +58,7 @@ const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
   create_file: '/api/tools/files',
   delete_file: '/api/tools/files',
   update_plan: '/api/tools/plan',
+  web_search: '/api/tools/web-search',
 };
 
 // Helper to auto-complete the current in-progress step when work tools succeed

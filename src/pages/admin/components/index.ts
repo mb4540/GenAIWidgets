@@ -2,6 +2,7 @@ export { default as TenantsTab } from './TenantsTab';
 export { default as UsersTab } from './UsersTab';
 export { default as MembershipsTab } from './MembershipsTab';
 export { default as PromptsTab } from './PromptsTab';
+export { default as BlobStorageTab } from './BlobStorageTab';
 export { default as PromptEditModal } from './PromptEditModal';
 export { default as TenantEditModal } from './TenantEditModal';
 export { default as TenantDetailModal } from './TenantDetailModal';

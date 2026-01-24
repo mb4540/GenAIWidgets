@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router-dom';
-import { Bot, Send, Loader2, Bug, MessageSquare } from 'lucide-react';
+import { Bot, Send, Loader2, Bug, MessageSquare, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { agentChatInfo } from './agentChatInfo';
 import { DebugPanel } from '@/components/agent-chat/DebugPanel';
 import { ChatHistorySidebar } from '@/components/agent-chat/ChatHistorySidebar';
 import type { Agent, AgentSession, SessionMessage } from '@/types/agent';
@@ -26,6 +28,7 @@ export default function AgentChatPage(): React.ReactElement {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const getAuthHeaders = useCallback(() => {
@@ -256,7 +259,20 @@ export default function AgentChatPage(): React.ReactElement {
           >
             <Bug className="h-5 w-5" />
           </button>
+          <button
+            onClick={() => setShowInfo(true)}
+            className="p-2 rounded-md hover:bg-accent"
+            title="View page details"
+          >
+            <Info className="h-5 w-5" />
+          </button>
         </div>
+
+        <PageInfoModal
+          isOpen={showInfo}
+          onClose={() => setShowInfo(false)}
+          content={agentChatInfo}
+        />
 
         {/* Error Banner */}
         {error && (

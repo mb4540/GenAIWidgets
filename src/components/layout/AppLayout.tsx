@@ -1,13 +1,14 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, LogOut, FolderOpen, Settings, Layers, Bot, Wrench } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, LogOut, FolderOpen, Settings, Layers, Bot, Wrench, GitCompare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/ai-gateway-chat', label: 'AI Gateway Chat', icon: MessageSquare },
-  { to: '/agent-chat', label: 'Agent Chat', icon: MessageSquare },
+  { to: '/ai-chat', label: 'AI Chat', icon: MessageSquare },
+  { to: '/compare-ai-models', label: 'Compare AI Models', icon: GitCompare },
+  { to: '/agent-chat', label: 'Agent Chat', icon: Bot },
   { to: '/agents', label: 'Agent Management', icon: Bot, end: true },
   { to: '/agents/tools', label: 'Agent Tools', icon: Wrench },
   { to: '/files', label: 'File Storage', icon: FolderOpen },
