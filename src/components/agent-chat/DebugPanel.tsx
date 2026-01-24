@@ -135,7 +135,12 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
               data,
             });
           } catch {
-            // Response wasn't JSON
+            // Response wasn't JSON - log the status at least
+            addEntry({
+              type: response.ok ? 'response' : 'error',
+              endpoint: url,
+              data: { status: response.status, statusText: response.statusText, note: 'Non-JSON response' },
+            });
           }
         }
         
@@ -145,7 +150,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
           addEntry({
             type: 'error',
             endpoint: url,
-            data: { error: String(error) },
+            data: { error: String(error), message: error instanceof Error ? error.message : 'Unknown error' },
           });
         }
         throw error;
