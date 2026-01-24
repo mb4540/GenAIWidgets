@@ -493,7 +493,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
       // Execute each tool and collect results
       // Track if we only called update_plan (no actual work tools)
-      const workToolNames = ['list_files', 'read_file', 'create_file', 'delete_file', 'get_weather'];
+      const workToolNames = ['list_files', 'read_file', 'create_file', 'delete_file', 'get_weather', 'web_search'];
       let calledWorkTool = false;
       
       for (const toolCall of llmResponse.tool_calls) {
