@@ -1,7 +1,13 @@
 import type { Context } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { callLLM, type LLMMessage, type ToolDefinition, type ToolCall } from './lib/llm-client';
-import type { ModelProvider } from '../../src/types/agent';
+import type { ModelProvider, ExecutionPlan } from '../../src/types/agent';
+
+// Type alias for the sql function
+type SqlClient = NeonQueryFunction<false, false>;
+
+// Constants for autonomous execution
+const MAX_CONSECUTIVE_NON_TOOL_RESPONSES = 3;
 
 interface AgentRow {
   agent_id: string;
@@ -257,6 +263,47 @@ async function executeToolCall(
   };
 }
 
+/**
+ * Retrieve the current execution plan from session memory
+ */
+async function getSessionPlan(
+  sql: SqlClient,
+  sessionId: string
+): Promise<ExecutionPlan | null> {
+  const result = await sql`
+    SELECT memory_value FROM agent_session_memory
+    WHERE session_id = ${sessionId} AND memory_key = 'execution_plan'
+  ` as { memory_value: unknown }[];
+  
+  const row = result[0];
+  if (!row?.memory_value) return null;
+  
+  const plan = row.memory_value as ExecutionPlan;
+  if (!plan.goal || !Array.isArray(plan.steps)) {
+    console.error('[getSessionPlan] Invalid plan structure');
+    return null;
+  }
+  
+  return plan;
+}
+
+/**
+ * Determine if the agent should continue based on plan status
+ */
+function shouldContinueBasedOnPlan(plan: ExecutionPlan | null): boolean {
+  if (!plan) return false;
+  
+  // Stop if plan is in a terminal or waiting state
+  if (plan.status === 'waiting_for_user') return false;
+  if (plan.status === 'completed') return false;
+  if (plan.status === 'failed') return false;
+  
+  // Continue if there are pending or in-progress steps
+  return plan.steps.some(
+    step => step.status === 'pending' || step.status === 'in_progress'
+  );
+}
+
 export default async function handler(req: Request, _context: Context): Promise<Response> {
   // This is a background function - it runs asynchronously
   // Triggered by POST with sessionId and initial message
@@ -366,6 +413,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
     // Agent loop
     let loopCount = 0;
+    let consecutiveNonToolResponses = 0;
     const maxSteps = agent.max_steps;
 
     while (loopCount < maxSteps) {
@@ -435,6 +483,8 @@ export default async function handler(req: Request, _context: Context): Promise<
           });
         }
 
+        // Reset counter when tool calls are made
+        consecutiveNonToolResponses = 0;
         await updateSessionStatus(sql, sessionId, 'active', currentStep);
       } else {
         // Regular response without tool calls
@@ -452,8 +502,20 @@ export default async function handler(req: Request, _context: Context): Promise<
 
         await updateSessionStatus(sql, sessionId, 'active', currentStep);
 
-        // If no tool calls and not goal complete, we're waiting for user input
-        break;
+        // Check if we should continue based on execution plan
+        const plan = await getSessionPlan(sql, sessionId);
+        const shouldContinue = shouldContinueBasedOnPlan(plan);
+
+        if (shouldContinue && consecutiveNonToolResponses < MAX_CONSECUTIVE_NON_TOOL_RESPONSES) {
+          // Plan has pending steps - continue autonomously
+          consecutiveNonToolResponses++;
+          console.log(`[agent-loop] Continuing based on plan (${consecutiveNonToolResponses}/${MAX_CONSECUTIVE_NON_TOOL_RESPONSES})`);
+          // Don't break - continue the loop
+        } else {
+          // No plan, plan complete, or too many non-tool responses - wait for user
+          consecutiveNonToolResponses = 0;
+          break;
+        }
       }
     }
 
