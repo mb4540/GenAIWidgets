@@ -227,6 +227,7 @@ tenants (1) ──────< files
 | agents                 | 0                | 2026-01-17   |
 | agent_sessions         | 0                | 2026-01-17   |
 | agent_session_messages | 0                | 2026-01-17   |
+| agent_session_memory   | 0                | 2026-01-24   |
 | agent_long_term_memory | 0                | 2026-01-17   |
 | agent_tools            | 0                | 2026-01-17   |
 | agent_tool_assignments | 0                | 2026-01-17   |
@@ -246,6 +247,7 @@ tenants (1) ──────< files
 | 011     | 011_agent_memory_table.sql     | Add agent_long_term_memory table                | 2026-01-17 |
 | 012     | 012_agent_tools_tables.sql     | Add agent_tools and assignments tables          | 2026-01-17 |
 | 013     | 013_mcp_servers_table.sql      | Add mcp_servers table                           | 2026-01-17 |
+| 015     | 015_agent_session_memory.sql   | Add agent_session_memory for short-term memory  | 2026-01-24 |
 
 ---
 
@@ -546,6 +548,38 @@ MCP server configurations for agent tools.
 **Notes:**
 - `auth_config` stores encrypted credentials using AES-256
 - Encryption key is stored in `NETLIFY_ENCRYPTION_KEY` environment variable
+
+---
+
+### agent_session_memory
+
+Short-term working memory for agent sessions (execution plans, scratchpad).
+
+| Column       | Type        | Nullable | Default           | Description                                |
+|--------------|-------------|----------|-------------------|--------------------------------------------|
+| memory_id    | UUID        | NO       | gen_random_uuid() | Primary key                                |
+| session_id   | UUID        | NO       | -                 | Reference to agent_sessions                |
+| memory_key   | TEXT        | NO       | -                 | Key identifier (execution_plan, scratchpad)|
+| memory_value | JSONB       | NO       | -                 | Structured data for the memory entry       |
+| created_at   | TIMESTAMPTZ | NO       | now()             | Record creation time                       |
+| updated_at   | TIMESTAMPTZ | NO       | now()             | Last update time                           |
+
+**Constraints:**
+- PRIMARY KEY: `memory_id`
+- FOREIGN KEY: `session_id` REFERENCES `agent_sessions(session_id)` ON DELETE CASCADE
+- UNIQUE: `(session_id, memory_key)`
+
+**Indexes:**
+- `idx_session_memory_session_id` on `session_id`
+- `idx_session_memory_session_key` on `(session_id, memory_key)`
+
+**Triggers:**
+- `update_agent_session_memory_updated_at` - Updates `updated_at` on row update
+
+**Notes:**
+- Used for storing execution plans during autonomous agent operation
+- Memory is automatically deleted when the parent session is deleted
+- Common memory_key values: `execution_plan`, `scratchpad`
 
 ---
 

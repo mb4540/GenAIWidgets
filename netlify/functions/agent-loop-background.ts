@@ -1,7 +1,13 @@
 import type { Context } from '@netlify/functions';
-import { neon } from '@neondatabase/serverless';
+import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { callLLM, type LLMMessage, type ToolDefinition, type ToolCall } from './lib/llm-client';
-import type { ModelProvider } from '../../src/types/agent';
+import type { ModelProvider, ExecutionPlan } from '../../src/types/agent';
+
+// Type alias for the sql function
+type SqlClient = NeonQueryFunction<false, false>;
+
+// Constants for autonomous execution
+const MAX_CONSECUTIVE_NON_TOOL_RESPONSES = 3;
 
 interface AgentRow {
   agent_id: string;
@@ -131,7 +137,7 @@ async function updateSessionStatus(
   }
 }
 
-function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[]): string {
+function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[], planningPrompt?: string): string {
   let prompt = agent.system_prompt;
 
   prompt += `\n\n## Your Goal\n${agent.goal}`;
@@ -143,11 +149,17 @@ function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[]): string {
     }
   }
 
-  prompt += `\n\n## Instructions
+  // Include planning instructions if provided
+  if (planningPrompt) {
+    prompt += `\n\n${planningPrompt}`;
+  } else {
+    // Default instructions (fallback if planning prompt not loaded)
+    prompt += `\n\n## Instructions
 - Work towards completing the goal step by step
 - Use available tools when needed
 - When you believe the goal is complete, respond with "GOAL_COMPLETE" at the start of your message
 - If you cannot complete the goal, explain why`;
+  }
 
   return prompt;
 }
@@ -167,6 +179,7 @@ const BUILTIN_TOOL_ENDPOINTS: Record<string, string> = {
   read_file: '/api/tools/files',
   create_file: '/api/tools/files',
   delete_file: '/api/tools/files',
+  update_plan: '/api/tools/plan',
 };
 
 async function executeToolCall(
@@ -256,6 +269,47 @@ async function executeToolCall(
   };
 }
 
+/**
+ * Retrieve the current execution plan from session memory
+ */
+async function getSessionPlan(
+  sql: SqlClient,
+  sessionId: string
+): Promise<ExecutionPlan | null> {
+  const result = await sql`
+    SELECT memory_value FROM agent_session_memory
+    WHERE session_id = ${sessionId} AND memory_key = 'execution_plan'
+  ` as { memory_value: unknown }[];
+  
+  const row = result[0];
+  if (!row?.memory_value) return null;
+  
+  const plan = row.memory_value as ExecutionPlan;
+  if (!plan.goal || !Array.isArray(plan.steps)) {
+    console.error('[getSessionPlan] Invalid plan structure');
+    return null;
+  }
+  
+  return plan;
+}
+
+/**
+ * Determine if the agent should continue based on plan status
+ */
+function shouldContinueBasedOnPlan(plan: ExecutionPlan | null): boolean {
+  if (!plan) return false;
+  
+  // Stop if plan is in a terminal or waiting state
+  if (plan.status === 'waiting_for_user') return false;
+  if (plan.status === 'completed') return false;
+  if (plan.status === 'failed') return false;
+  
+  // Continue if there are pending or in-progress steps
+  return plan.steps.some(
+    step => step.status === 'pending' || step.status === 'in_progress'
+  );
+}
+
 export default async function handler(req: Request, _context: Context): Promise<Response> {
   // This is a background function - it runs asynchronously
   // Triggered by POST with sessionId and initial message
@@ -331,6 +385,14 @@ export default async function handler(req: Request, _context: Context): Promise<
     const tools = await getAgentTools(sql, agent.agent_id);
     const toolDefinitions = convertToolsToDefinitions(tools);
 
+    // Fetch planning prompt from database
+    const planningPromptResult = await sql`
+      SELECT system_prompt FROM prompts 
+      WHERE function_name = 'agent_planning_system' AND is_active = true
+      LIMIT 1
+    ` as { system_prompt: string }[];
+    const planningPrompt = planningPromptResult[0]?.system_prompt;
+
     // Get existing messages
     const existingMessages = await sql`
       SELECT * FROM agent_session_messages
@@ -340,7 +402,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
     // Build conversation history
     const conversationMessages: LLMMessage[] = [
-      { role: 'system', content: buildSystemPrompt(agent, memories) },
+      { role: 'system', content: buildSystemPrompt(agent, memories, planningPrompt) },
     ];
 
     for (const msg of existingMessages) {
@@ -365,6 +427,7 @@ export default async function handler(req: Request, _context: Context): Promise<
 
     // Agent loop
     let loopCount = 0;
+    let consecutiveNonToolResponses = 0;
     const maxSteps = agent.max_steps;
 
     while (loopCount < maxSteps) {
@@ -434,6 +497,8 @@ export default async function handler(req: Request, _context: Context): Promise<
           });
         }
 
+        // Reset counter when tool calls are made
+        consecutiveNonToolResponses = 0;
         await updateSessionStatus(sql, sessionId, 'active', currentStep);
       } else {
         // Regular response without tool calls
@@ -451,8 +516,20 @@ export default async function handler(req: Request, _context: Context): Promise<
 
         await updateSessionStatus(sql, sessionId, 'active', currentStep);
 
-        // If no tool calls and not goal complete, we're waiting for user input
-        break;
+        // Check if we should continue based on execution plan
+        const plan = await getSessionPlan(sql, sessionId);
+        const shouldContinue = shouldContinueBasedOnPlan(plan);
+
+        if (shouldContinue && consecutiveNonToolResponses < MAX_CONSECUTIVE_NON_TOOL_RESPONSES) {
+          // Plan has pending steps - continue autonomously
+          consecutiveNonToolResponses++;
+          console.log(`[agent-loop] Continuing based on plan (${consecutiveNonToolResponses}/${MAX_CONSECUTIVE_NON_TOOL_RESPONSES})`);
+          // Don't break - continue the loop
+        } else {
+          // No plan, plan complete, or too many non-tool responses - wait for user
+          consecutiveNonToolResponses = 0;
+          break;
+        }
       }
     }
 
