@@ -318,9 +318,10 @@ export default async function handler(req: Request, _context: Context): Promise<
       const authToken = authHeader.replace('Bearer ', '');
 
       // Add assistant message with tool calls to conversation
+      // Note: When LLM returns tool_calls, content may be empty. Use placeholder if needed.
       conversationMessages.push({
         role: 'assistant',
-        content: assistantContent,
+        content: assistantContent || 'Executing tools...',
         tool_calls: llmResponse.tool_calls,
       });
 
@@ -380,18 +381,14 @@ export default async function handler(req: Request, _context: Context): Promise<
         `;
       }
 
-      // If not complete, trigger background function for autonomous continuation
-      if (!finalGoalMet) {
-        const baseUrl = process.env.URL || 'http://localhost:8888';
-        void fetch(`${baseUrl}/.netlify/functions/agent-loop-background`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': req.headers.get('Authorization') || '',
-          },
-          body: JSON.stringify({ sessionId }),
-        }).catch(err => console.error('[agent-chat] Failed to trigger background loop:', err));
-      }
+      // Check if there's an active plan with pending steps
+      const planResult = await sql`
+        SELECT memory_value FROM agent_session_memory
+        WHERE session_id = ${sessionId} AND memory_key = 'execution_plan'
+      ` as { memory_value: { status: string; steps: { status: string }[] } }[];
+      const plan = planResult[0]?.memory_value;
+      const hasPendingSteps = plan && plan.status === 'executing' && 
+        plan.steps.some((s: { status: string }) => s.status === 'pending' || s.status === 'in_progress');
 
       return createSuccessResponse({
         message: {
@@ -404,21 +401,18 @@ export default async function handler(req: Request, _context: Context): Promise<
           current_step: currentStep,
           goal_met: finalGoalMet,
         },
+        shouldContinue: !finalGoalMet && hasPendingSteps,
       });
     }
 
-    // If no tool calls but session still active, trigger background for plan-based continuation
-    if (!goalMet) {
-      const baseUrl = process.env.URL || 'http://localhost:8888';
-      void fetch(`${baseUrl}/.netlify/functions/agent-loop-background`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': req.headers.get('Authorization') || '',
-        },
-        body: JSON.stringify({ sessionId }),
-      }).catch(err => console.error('[agent-chat] Failed to trigger background loop:', err));
-    }
+    // Check if there's an active plan with pending steps
+    const planResult2 = await sql`
+      SELECT memory_value FROM agent_session_memory
+      WHERE session_id = ${sessionId} AND memory_key = 'execution_plan'
+    ` as { memory_value: { status: string; steps: { status: string }[] } }[];
+    const plan2 = planResult2[0]?.memory_value;
+    const hasPendingSteps2 = plan2 && plan2.status === 'executing' && 
+      plan2.steps.some((s: { status: string }) => s.status === 'pending' || s.status === 'in_progress');
 
     return createSuccessResponse({
       message: {
@@ -431,6 +425,7 @@ export default async function handler(req: Request, _context: Context): Promise<
         current_step: currentStep,
         goal_met: goalMet,
       },
+      shouldContinue: !goalMet && hasPendingSteps2,
     });
   } catch (error) {
     console.error('Error in agent-chat:', error);

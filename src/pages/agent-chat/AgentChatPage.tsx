@@ -142,24 +142,15 @@ export default function AgentChatPage(): React.ReactElement {
     }
   }, [session?.session_id, fetchPlan]);
 
-  const sendMessage = async (): Promise<void> => {
-    if (!inputMessage.trim() || !session || sending) return;
-
-    const userMessage = inputMessage.trim();
-    setInputMessage('');
-    setSending(true);
-    setError(null);
-
-    // Add user message to UI immediately
-    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
-
+  // Core function to send a message and handle response
+  const sendChatMessage = async (messageText: string, isUserVisible: boolean): Promise<boolean> => {
     try {
       const response = await fetch('/api/agent-chat', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          sessionId: session.session_id,
-          message: userMessage,
+          sessionId: session!.session_id,
+          message: messageText,
         }),
       });
 
@@ -167,6 +158,7 @@ export default function AgentChatPage(): React.ReactElement {
         success: boolean;
         message?: { role: string; content: string; tokens_used?: number };
         session?: { status: string; current_step: number; goal_met: boolean };
+        shouldContinue?: boolean;
         error?: string;
       };
 
@@ -187,17 +179,48 @@ export default function AgentChatPage(): React.ReactElement {
         }
 
         // Refresh plan after message
-        if (session) {
-          void fetchPlan(session.session_id);
-        }
+        void fetchPlan(session!.session_id);
+
+        // Return whether we should continue
+        return data.shouldContinue === true;
       } else {
         setError(data.error || 'Failed to send message');
+        return false;
       }
     } catch {
       setError('Failed to send message');
-    } finally {
-      setSending(false);
+      return false;
     }
+  };
+
+  // Main send function that handles user input and auto-continuation
+  const sendMessage = async (): Promise<void> => {
+    if (!inputMessage.trim() || !session || sending) return;
+
+    const userMessage = inputMessage.trim();
+    setInputMessage('');
+    setSending(true);
+    setError(null);
+
+    // Add user message to UI immediately
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
+
+    // Send initial message
+    let shouldContinue = await sendChatMessage(userMessage, true);
+
+    // Auto-continue loop - agent continues executing plan steps
+    let continuationCount = 0;
+    const maxContinuations = 20; // Safety limit
+
+    while (shouldContinue && continuationCount < maxContinuations) {
+      continuationCount++;
+      // Small delay to prevent UI freezing
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // Send continuation message (invisible to user in terms of input)
+      shouldContinue = await sendChatMessage('Continue with the next step of your plan.', false);
+    }
+
+    setSending(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
