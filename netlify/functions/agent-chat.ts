@@ -146,7 +146,7 @@ async function executeToolCall(
   };
 }
 
-function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[]): string {
+function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[], hasUpdatePlanTool: boolean): string {
   let prompt = agent.system_prompt;
   prompt += `\n\n## Your Goal\n${agent.goal}`;
 
@@ -157,11 +157,41 @@ function buildSystemPrompt(agent: AgentRow, memories: MemoryRow[]): string {
     }
   }
 
-  prompt += `\n\n## Instructions
+  // Include planning instructions if the agent has access to the update_plan tool
+  if (hasUpdatePlanTool) {
+    prompt += `\n\n## Execution Model - REQUIRED
+
+You operate by creating and following execution plans. Follow this workflow:
+
+### 1. PLANNING PHASE (Required First Step)
+When you receive a new task, you MUST:
+1. Call the \`update_plan\` tool with action="create" to create your execution plan
+2. Break down the task into clear, actionable steps (3-7 steps typically)
+3. Each step should be specific and achievable with your available tools
+
+### 2. EXECUTION PHASE
+After creating your plan:
+1. Call \`update_plan\` with action="update_step", step_number=1, step_status="in_progress"
+2. Execute the step using appropriate tools
+3. Call \`update_plan\` with action="update_step", step_number=1, step_status="completed", step_result="summary of what you did"
+4. Repeat for each subsequent step
+
+### 3. COMPLETION
+When all steps are done:
+- Call \`update_plan\` with action="complete" and reason="summary of accomplishments"
+- Then respond with "GOAL_COMPLETE" followed by your final summary
+
+### Rules
+- ALWAYS create a plan first before doing anything else
+- ALWAYS update your plan status after each action
+- Keep steps atomic and verifiable`;
+  } else {
+    prompt += `\n\n## Instructions
 - Work towards completing the goal step by step
 - Use available tools when needed
 - When you believe the goal is complete, respond with "GOAL_COMPLETE" at the start of your message
 - If you cannot complete the goal, explain why`;
+  }
 
   return prompt;
 }
@@ -254,9 +284,12 @@ export default async function handler(req: Request, _context: Context): Promise<
       ORDER BY step_number, created_at
     ` as MessageRow[];
 
+    // Check if agent has access to update_plan tool
+    const hasUpdatePlanTool = tools.some(t => t.name === 'update_plan');
+
     // Build conversation
     const conversationMessages: LLMMessage[] = [
-      { role: 'system', content: buildSystemPrompt(agent, memories) },
+      { role: 'system', content: buildSystemPrompt(agent, memories, hasUpdatePlanTool) },
     ];
 
     for (const msg of existingMessages) {

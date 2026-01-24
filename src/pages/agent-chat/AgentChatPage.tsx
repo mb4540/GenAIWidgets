@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router-dom';
-import { Bot, Send, Loader2 } from 'lucide-react';
+import { Bot, Send, Loader2, Bug } from 'lucide-react';
 import { PlanProgress } from '@/components/agent-chat/PlanProgress';
+import { DebugPanel } from '@/components/agent-chat/DebugPanel';
 import type { Agent, AgentSession, SessionMessage, ExecutionPlan } from '@/types/agent';
 
 interface ChatMessage {
@@ -27,6 +28,7 @@ export default function AgentChatPage(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [currentPlan, setCurrentPlan] = useState<ExecutionPlan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const getAuthHeaders = useCallback(() => {
@@ -271,6 +273,13 @@ export default function AgentChatPage(): React.ReactElement {
             Thinking...
           </div>
         )}
+        <button
+          onClick={() => setDebugOpen(!debugOpen)}
+          className={`p-2 rounded-md hover:bg-accent ${debugOpen ? 'bg-accent text-accent-foreground' : ''}`}
+          title="Toggle Debug Panel"
+        >
+          <Bug className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Error Banner */}
@@ -351,6 +360,13 @@ export default function AgentChatPage(): React.ReactElement {
           </div>
         )}
       </div>
+
+      {/* Debug Panel */}
+      <DebugPanel
+        sessionId={session?.session_id || null}
+        isOpen={debugOpen}
+        onClose={() => setDebugOpen(false)}
+      />
     </div>
   );
 }
