@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react';
-import { Send, Loader2, Info } from 'lucide-react';
+/* eslint-disable no-console */
+import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { Send, Loader2, Info, ToggleLeft, ToggleRight } from 'lucide-react';
 import PageInfoModal from '@/components/common/PageInfoModal';
 import { chatInfo } from './chatInfo';
-import { 
-  AVAILABLE_MODELS as SHARED_MODELS, 
+import {
+  AVAILABLE_MODELS as SHARED_MODELS,
   DEFAULT_MODELS as SHARED_DEFAULTS,
   PROVIDER_LABELS as SHARED_LABELS,
 } from '@/components/common/ModelSelector';
@@ -20,7 +21,25 @@ interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  results?: Record<Provider, ProviderResult>;
+  results?: Partial<Record<Provider, ProviderResult>>;
+  enabledProviders?: Provider[];
+  loading?: boolean;
+  jobId?: string;
+}
+
+interface JobStatusResponse {
+  success: boolean;
+  jobId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  results: Record<string, ProviderResult>;
+  enabledProviders: Provider[];
+  error?: string;
+}
+
+interface TriggerResponse {
+  success: boolean;
+  jobId?: string;
+  error?: string;
 }
 
 const PROVIDER_LABELS: Record<Provider, string> = {
@@ -47,16 +66,105 @@ const DEFAULT_MODELS: Record<Provider, string> = {
   gemini: SHARED_DEFAULTS.google,
 };
 
+const POLL_INTERVAL = 1000; // 1 second
+
 export default function AiGatewayChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedModels, setSelectedModels] = useState<Record<Provider, string>>(DEFAULT_MODELS);
+  const [enabledProviders, setEnabledProviders] = useState<Record<Provider, boolean>>({
+    openai: true,
+    anthropic: true,
+    gemini: true,
+  });
   const [showInfo, setShowInfo] = useState(false);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return (): void => {
+      if (pollingRef.current) {
+        clearTimeout(pollingRef.current);
+      }
+    };
+  }, []);
+
+  const toggleProvider = (provider: Provider): void => {
+    setEnabledProviders((prev) => ({
+      ...prev,
+      [provider]: !prev[provider],
+    }));
+  };
+
+  const getEnabledProvidersList = (): Provider[] => {
+    return (['openai', 'anthropic', 'gemini'] as Provider[]).filter(
+      (p) => enabledProviders[p]
+    );
+  };
+
+  const startPolling = (jobId: string, messageId: string): void => {
+    const poll = (): void => {
+      fetch(`/api/ai/chat-status?jobId=${jobId}`)
+        .then((response) => response.json() as Promise<JobStatusResponse>)
+        .then((data) => {
+          if (!data.success) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === messageId
+                  ? { ...m, loading: false, content: data.error || 'Failed to get job status' }
+                  : m
+              )
+            );
+            setLoading(false);
+            return;
+          }
+
+          // Update message with current results
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === messageId
+                ? {
+                    ...m,
+                    results: data.results as Partial<Record<Provider, ProviderResult>>,
+                    loading: data.status !== 'completed' && data.status !== 'failed',
+                  }
+                : m
+            )
+          );
+
+          // Continue polling if not complete
+          if (data.status !== 'completed' && data.status !== 'failed') {
+            pollingRef.current = setTimeout(poll, POLL_INTERVAL);
+          } else {
+            setLoading(false);
+          }
+        })
+        .catch((error: unknown) => {
+          console.error('Polling error:', error);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === messageId
+                ? { ...m, loading: false, content: 'Failed to poll job status' }
+                : m
+            )
+          );
+          setLoading(false);
+        });
+    };
+
+    poll();
+  };
+
+  const handleSubmit = (e: FormEvent): void => {
     e.preventDefault();
     if (!input.trim() || loading) return;
+
+    const enabledList = getEnabledProvidersList();
+    if (enabledList.length === 0) {
+      alert('Please enable at least one AI provider');
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -64,46 +172,65 @@ export default function AiGatewayChatPage() {
       content: input.trim(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const assistantMessageId = crypto.randomUUID();
+    const assistantMessage: ChatMessage = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      results: {},
+      enabledProviders: enabledList,
+      loading: true,
+    };
+
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
     setInput('');
     setLoading(true);
 
-    try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage.content,
-          models: selectedModels,
-        }),
+    fetch('/api/ai/chat-trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: userMessage.content,
+        models: selectedModels,
+        enabledProviders: enabledList,
+      }),
+    })
+      .then((response) => response.json() as Promise<TriggerResponse>)
+      .then((data) => {
+        if (!data.success) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMessageId
+                ? { ...m, loading: false, content: data.error || 'Failed to start job' }
+                : m
+            )
+          );
+          setLoading(false);
+          return;
+        }
+
+        // Start polling for results
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId ? { ...m, jobId: data.jobId } : m
+          )
+        );
+
+        if (data.jobId) {
+          startPolling(data.jobId, assistantMessageId);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error('Submit error:', error);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? { ...m, loading: false, content: 'Failed to connect to the AI service' }
+              : m
+          )
+        );
+        setLoading(false);
       });
-
-      const data = await response.json();
-
-      const assistantMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: '',
-        results: data.success ? data.results : undefined,
-      };
-
-      if (!data.success) {
-        assistantMessage.content = data.error || 'An error occurred';
-      }
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: 'Failed to connect to the AI service. Please try again.',
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -130,32 +257,55 @@ export default function AiGatewayChatPage() {
         content={chatInfo}
       />
 
-      {/* Model Selectors */}
+      {/* Model Selectors with Toggles */}
       <div className="grid gap-4 border-b border-border p-4 md:grid-cols-3">
-        {(['openai', 'anthropic', 'gemini'] as Provider[]).map((provider) => (
-          <div key={provider} className={`rounded-lg border-l-4 bg-card p-3 ${PROVIDER_COLORS[provider]}`}>
-            <label
-              htmlFor={`model-${provider}`}
-              className="mb-1 block text-sm font-medium text-card-foreground"
+        {(['openai', 'anthropic', 'gemini'] as Provider[]).map((provider) => {
+          const isEnabled = enabledProviders[provider];
+          return (
+            <div
+              key={provider}
+              className={`rounded-lg border-l-4 bg-card p-3 transition-opacity ${PROVIDER_COLORS[provider]} ${
+                !isEnabled ? 'opacity-50' : ''
+              }`}
             >
-              {PROVIDER_LABELS[provider]}
-            </label>
-            <select
-              id={`model-${provider}`}
-              value={selectedModels[provider]}
-              onChange={(e) =>
-                setSelectedModels((prev) => ({ ...prev, [provider]: e.target.value }))
-              }
-              className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              {AVAILABLE_MODELS[provider].map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ))}
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor={`model-${provider}`}
+                  className="text-sm font-medium text-card-foreground"
+                >
+                  {PROVIDER_LABELS[provider]}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => toggleProvider(provider)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title={isEnabled ? `Disable ${PROVIDER_LABELS[provider]}` : `Enable ${PROVIDER_LABELS[provider]}`}
+                >
+                  {isEnabled ? (
+                    <ToggleRight className="h-6 w-6 text-primary" />
+                  ) : (
+                    <ToggleLeft className="h-6 w-6" />
+                  )}
+                </button>
+              </div>
+              <select
+                id={`model-${provider}`}
+                value={selectedModels[provider]}
+                onChange={(e) =>
+                  setSelectedModels((prev) => ({ ...prev, [provider]: e.target.value }))
+                }
+                disabled={!isEnabled}
+                className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {AVAILABLE_MODELS[provider].map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          );
+        })}
       </div>
 
       {/* Chat Messages */}
@@ -176,28 +326,37 @@ export default function AiGatewayChatPage() {
                       {message.content}
                     </div>
                   </div>
-                ) : message.results ? (
+                ) : message.results || message.loading ? (
                   <div className="grid gap-4 md:grid-cols-3">
-                    {(['openai', 'anthropic', 'gemini'] as Provider[]).map((provider) => {
+                    {(message.enabledProviders || ['openai', 'anthropic', 'gemini'] as Provider[]).map((provider) => {
                       const result = message.results?.[provider];
-                      if (!result) return null;
+                      const isLoading = message.loading && !result;
                       return (
                         <div
                           key={provider}
                           className={`rounded-lg border-l-4 bg-card p-4 ${PROVIDER_COLORS[provider]}`}
                         >
-                          <h3 className="mb-2 font-semibold text-card-foreground">
+                          <h3 className="mb-2 font-semibold text-card-foreground flex items-center gap-2">
                             {PROVIDER_LABELS[provider]}
+                            {isLoading && (
+                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            )}
                           </h3>
-                          {result.ok ? (
-                            <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                              {result.text}
+                          {result ? (
+                            result.ok ? (
+                              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                                {result.text}
+                              </p>
+                            ) : (
+                              <p className="text-sm text-destructive">
+                                Error: {result.error || 'Unknown error'}
+                              </p>
+                            )
+                          ) : isLoading ? (
+                            <p className="text-sm text-muted-foreground italic">
+                              Waiting for response...
                             </p>
-                          ) : (
-                            <p className="text-sm text-destructive">
-                              Error: {result.error || 'Unknown error'}
-                            </p>
-                          )}
+                          ) : null}
                         </div>
                       );
                     })}
@@ -209,12 +368,6 @@ export default function AiGatewayChatPage() {
                 )}
               </div>
             ))}
-            {loading && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Getting responses from AI providers...</span>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -232,7 +385,7 @@ export default function AiGatewayChatPage() {
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || !input.trim() || getEnabledProvidersList().length === 0}
             className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             <Send className="h-4 w-4" />

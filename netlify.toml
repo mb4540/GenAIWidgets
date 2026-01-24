@@ -16,6 +16,9 @@
 [functions."qa-generate-background"]
   timeout = 900
 
+[functions."ai-chat-background"]
+  timeout = 120
+
 # API routes redirect to functions
 [[redirects]]
   from = "/api/auth/signup"
@@ -35,6 +38,21 @@
 [[redirects]]
   from = "/api/ai/chat"
   to = "/.netlify/functions/ai-chat"
+  status = 200
+
+[[redirects]]
+  from = "/api/ai/chat-trigger"
+  to = "/.netlify/functions/ai-chat-trigger"
+  status = 200
+
+[[redirects]]
+  from = "/api/ai/chat-status"
+  to = "/.netlify/functions/ai-chat-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/ai/chat-background"
+  to = "/.netlify/functions/ai-chat-background"
   status = 200
 
 # Files API
