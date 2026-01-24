@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router-dom';
-import { Brain, Plus, Trash2, Pencil, ArrowLeft } from 'lucide-react';
+import { Brain, Plus, Trash2, Pencil, ArrowLeft, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { memoryManagementInfo } from './memoryManagementInfo';
 import { Link } from 'react-router-dom';
 import type { Agent, AgentMemory, MemoryInput, MemoryType } from '@/types/agent';
 
@@ -30,6 +32,7 @@ export default function MemoryManagementPage(): React.ReactElement {
   const [formType, setFormType] = useState<MemoryType>('user_provided');
   const [formImportance, setFormImportance] = useState(5);
   const [submitting, setSubmitting] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('auth_token');
@@ -201,7 +204,20 @@ export default function MemoryManagementPage(): React.ReactElement {
         >
           <Plus className="h-4 w-4" /> Add Memory
         </button>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="p-2 rounded-md hover:bg-accent"
+          title="View page details"
+        >
+          <Info className="h-5 w-5" />
+        </button>
       </div>
+
+      <PageInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        content={memoryManagementInfo}
+      />
 
       {error && (
         <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">

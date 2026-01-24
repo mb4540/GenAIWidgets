@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router-dom';
-import { MessageSquare, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Loader2, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { aiChatInfo } from './aiChatInfo';
 import { AiChatHistorySidebar } from '@/components/ai-chat/AiChatHistorySidebar';
 import ModelSelector, { DEFAULT_MODELS } from '@/components/common/ModelSelector';
 
@@ -49,6 +51,7 @@ export default function AiChatPage(): React.ReactElement {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
   
   // Model selection for new chats
   const [newChatProvider, setNewChatProvider] = useState('openai');
@@ -258,7 +261,20 @@ export default function AiChatPage(): React.ReactElement {
               Thinking...
             </div>
           )}
+          <button
+            onClick={() => setShowInfo(true)}
+            className="p-2 rounded-md hover:bg-accent"
+            title="View page details"
+          >
+            <Info className="h-5 w-5" />
+          </button>
         </div>
+
+        <PageInfoModal
+          isOpen={showInfo}
+          onClose={() => setShowInfo(false)}
+          content={aiChatInfo}
+        />
 
         {/* Error Banner */}
         {error && (

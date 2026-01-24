@@ -11,7 +11,9 @@ import {
   Loader2,
   MessageSquare,
   Sparkles,
-  Info
+  Info,
+  Bot,
+  Wrench
 } from 'lucide-react';
 import PageInfoModal from '@/components/common/PageInfoModal';
 import { dashboardInfo } from './dashboardInfo';
@@ -37,6 +39,18 @@ interface QAStats {
   totalJobs: number;
 }
 
+interface AiChatStats {
+  totalSessions: number;
+  activeSessions: number;
+}
+
+interface AgentStats {
+  totalAgents: number;
+  activeAgents: number;
+  totalSessions: number;
+  totalTools: number;
+}
+
 interface RecentActivity {
   type: 'extraction' | 'qa_generation';
   fileName: string;
@@ -48,6 +62,8 @@ interface DashboardData {
   fileStats: FileStats;
   extractionStats: ExtractionStats;
   qaStats: QAStats;
+  aiChatStats: AiChatStats;
+  agentStats: AgentStats;
   recentActivity: RecentActivity[];
 }
 
@@ -78,6 +94,8 @@ export default function DashboardPage() {
             fileStats: result.fileStats,
             extractionStats: result.extractionStats,
             qaStats: result.qaStats,
+            aiChatStats: result.aiChatStats,
+            agentStats: result.agentStats,
             recentActivity: result.recentActivity,
           });
         } else {
@@ -218,6 +236,57 @@ export default function DashboardPage() {
               <div className="flex gap-3 text-xs text-muted-foreground mt-1">
                 <span className="text-green-600">{data.qaStats.approved} approved</span>
                 <span className="text-yellow-600">{data.qaStats.pending} pending</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Second Row - AI & Agent Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* AI Chat Sessions Card */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="text-sm font-medium">AI Chat Sessions</span>
+              </div>
+              <div className="text-3xl font-bold">{data.aiChatStats.totalSessions}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                <span className="text-green-600">{data.aiChatStats.activeSessions} active</span>
+              </div>
+            </div>
+
+            {/* Agents Card */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Bot className="h-4 w-4" />
+                <span className="text-sm font-medium">Agents</span>
+              </div>
+              <div className="text-3xl font-bold">{data.agentStats.totalAgents}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                <span className="text-green-600">{data.agentStats.activeAgents} active</span>
+              </div>
+            </div>
+
+            {/* Agent Sessions Card */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Bot className="h-4 w-4" />
+                <span className="text-sm font-medium">Agent Sessions</span>
+              </div>
+              <div className="text-3xl font-bold">{data.agentStats.totalSessions}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Total conversations
+              </div>
+            </div>
+
+            {/* Tools Card */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Wrench className="h-4 w-4" />
+                <span className="text-sm font-medium">Agent Tools</span>
+              </div>
+              <div className="text-3xl font-bold">{data.agentStats.totalTools}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Available tools
               </div>
             </div>
           </div>

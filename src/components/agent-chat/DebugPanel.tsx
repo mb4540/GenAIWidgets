@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronDown, ChevronUp, RefreshCw, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, RefreshCw, X, Download, Info } from 'lucide-react';
+import PageInfoModal from '@/components/common/PageInfoModal';
+import { debugPanelInfo } from './debugPanelInfo';
 
 const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('auth_token');
@@ -51,6 +53,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
     memory: true,
   });
   const [loading, setLoading] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const addEntry = useCallback((entry: Omit<DebugEntry, 'timestamp'>) => {
     setEntries(prev => [...prev, { ...entry, timestamp: new Date().toISOString() }]);
@@ -158,6 +161,68 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  const handleDownloadAll = () => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `debug-session-${sessionId?.slice(0, 8) || 'unknown'}-${timestamp}.txt`;
+
+    let content = `Debug Panel Export\n`;
+    content += `==================\n`;
+    content += `Session ID: ${sessionId || 'None'}\n`;
+    content += `Exported: ${new Date().toLocaleString()}\n\n`;
+
+    // Session Memory
+    content += `\n${'='.repeat(50)}\n`;
+    content += `SESSION MEMORY (${sessionMemory.length} entries)\n`;
+    content += `${'='.repeat(50)}\n\n`;
+    if (sessionMemory.length === 0) {
+      content += `No memory entries\n`;
+    } else {
+      sessionMemory.forEach((mem, i) => {
+        content += `--- Memory ${i + 1}: ${mem.memory_key} ---\n`;
+        content += JSON.stringify(mem.memory_value, null, 2);
+        content += `\n\n`;
+      });
+    }
+
+    // Session Messages
+    content += `\n${'='.repeat(50)}\n`;
+    content += `SESSION MESSAGES (${sessionMessages.length} messages)\n`;
+    content += `${'='.repeat(50)}\n\n`;
+    sessionMessages.forEach((msg, i) => {
+      content += `--- Message ${i + 1} (Step ${msg.step_number}, ${msg.role}) ---\n`;
+      if (msg.tool_name) {
+        content += `Tool: ${msg.tool_name}\n`;
+        if (msg.tool_input) content += `Input: ${JSON.stringify(msg.tool_input, null, 2)}\n`;
+        if (msg.tool_output) content += `Output: ${JSON.stringify(msg.tool_output, null, 2)}\n`;
+      }
+      content += `Content: ${msg.content}\n\n`;
+    });
+
+    // API Requests
+    content += `\n${'='.repeat(50)}\n`;
+    content += `API REQUESTS (${entries.length} entries)\n`;
+    content += `${'='.repeat(50)}\n\n`;
+    entries.forEach((entry, i) => {
+      content += `--- ${entry.type.toUpperCase()} ${i + 1} (${new Date(entry.timestamp).toLocaleTimeString()}) ---\n`;
+      content += `Endpoint: ${entry.endpoint}\n`;
+      if (entry.data) {
+        content += `Data: ${JSON.stringify(entry.data, null, 2)}\n`;
+      }
+      content += `\n`;
+    });
+
+    // Create and download file
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (!isOpen) return null;
 
   const containerClass = inline
@@ -174,14 +239,35 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ sessionId, isOpen, onClo
             onClick={() => void fetchDebugData()}
             disabled={loading}
             className="p-1 hover:bg-gray-700 rounded"
+            title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded">
+          <button
+            onClick={handleDownloadAll}
+            className="p-1 hover:bg-gray-700 rounded"
+            title="Download All"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowInfo(true)}
+            className="p-1 hover:bg-gray-700 rounded"
+            title="Info"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+          <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded" title="Close">
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      <PageInfoModal
+        isOpen={showInfo}
+        onClose={() => setShowInfo(false)}
+        content={debugPanelInfo}
+      />
 
       <div className="flex-1 overflow-y-auto">
         {/* Session Memory Section */}
