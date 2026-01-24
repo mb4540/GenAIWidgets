@@ -583,6 +583,62 @@ Short-term working memory for agent sessions (execution plans, scratchpad).
 
 ---
 
+### ai_chat_sessions
+
+AI chat sessions for single-model conversations.
+
+| Column         | Type        | Nullable | Default           | Description                    |
+|----------------|-------------|----------|-------------------|--------------------------------|
+| session_id     | UUID        | NO       | gen_random_uuid() | Primary key                    |
+| tenant_id      | UUID        | NO       | -                 | Reference to tenant            |
+| user_id        | UUID        | NO       | -                 | Reference to user              |
+| title          | TEXT        | YES      | NULL              | Session title (auto-generated) |
+| model_provider | TEXT        | NO       | -                 | AI provider (openai, anthropic, gemini) |
+| model_name     | TEXT        | NO       | -                 | Model identifier               |
+| status         | TEXT        | NO       | 'active'          | active / completed / archived  |
+| created_at     | TIMESTAMPTZ | NO       | now()             | Record creation time           |
+| updated_at     | TIMESTAMPTZ | NO       | now()             | Last update time               |
+
+**Constraints:**
+- PRIMARY KEY: `session_id`
+- FOREIGN KEY: `tenant_id` REFERENCES `tenants(tenant_id)` ON DELETE CASCADE
+- FOREIGN KEY: `user_id` REFERENCES `users(user_id)` ON DELETE CASCADE
+- CHECK: `status IN ('active', 'completed', 'archived')`
+
+**Indexes:**
+- `idx_ai_chat_sessions_user_id` on `user_id`
+- `idx_ai_chat_sessions_tenant_id` on `tenant_id`
+- `idx_ai_chat_sessions_created_at` on `created_at DESC`
+
+**Triggers:**
+- `update_ai_chat_sessions_updated_at` - Updates `updated_at` on row update
+
+---
+
+### ai_chat_messages
+
+Messages within AI chat sessions.
+
+| Column      | Type        | Nullable | Default           | Description                |
+|-------------|-------------|----------|-------------------|----------------------------|
+| message_id  | UUID        | NO       | gen_random_uuid() | Primary key                |
+| session_id  | UUID        | NO       | -                 | Reference to ai_chat_sessions |
+| role        | TEXT        | NO       | -                 | user / assistant / system  |
+| content     | TEXT        | NO       | -                 | Message content            |
+| tokens_used | INTEGER     | YES      | NULL              | Tokens used for response   |
+| created_at  | TIMESTAMPTZ | NO       | now()             | Record creation time       |
+
+**Constraints:**
+- PRIMARY KEY: `message_id`
+- FOREIGN KEY: `session_id` REFERENCES `ai_chat_sessions(session_id)` ON DELETE CASCADE
+- CHECK: `role IN ('user', 'assistant', 'system')`
+
+**Indexes:**
+- `idx_ai_chat_messages_session_id` on `session_id`
+- `idx_ai_chat_messages_created_at` on `created_at`
+
+---
+
 ## Notes
 
 - All timestamps use `TIMESTAMPTZ` for timezone awareness
