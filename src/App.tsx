@@ -32,10 +32,10 @@ function App() {
               <Route path="/ai-gateway-chat" element={<AiGatewayChatPage />} />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/rag-preprocessing" element={<RagPreprocessingPage />} />
-              <Route path="/agent-chat" element={<AgentManagementPage />} />
-              <Route path="/agent-chat/tools" element={<ToolsManagementPage />} />
-              <Route path="/agent-chat/chat" element={<AgentChatPage />} />
-              <Route path="/agent-chat/memories" element={<MemoryManagementPage />} />
+              <Route path="/agents" element={<AgentManagementPage />} />
+              <Route path="/agents/tools" element={<ToolsManagementPage />} />
+              <Route path="/agents/memories" element={<MemoryManagementPage />} />
+              <Route path="/agent-chat" element={<AgentChatPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>
